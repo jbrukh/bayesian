@@ -94,7 +94,7 @@ func (this *classData) getWordsProb(words []string) (prob float32) {
 }
 
 // New creates a new Classifier.
-func New(classes []Class) (inst *Classifier) {
+func NewClassifier(classes []Class) (inst *Classifier) {
     inst = new(Classifier)
     inst.classes = classes
     inst.datas = make(map[Class]*classData)

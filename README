@@ -7,18 +7,22 @@ Classifiers. To install, simply:
 
     $ make install
 
-To use the classifier, first you must create some classes
-and train your classifier:
+To test, use:
 
-    import "bayesian"
+    $ make test
+
+To use the classifier, first you must create some classes
+and train it:
+
+    import . "bayesian"
 
     const (
-        Good bayesian.Class = "good"
-        Bad bayesian.Class = "bad"
+        Good Class = "good"
+        Bad Class = "bad"
     )
     
-    classifier := bayesian.NewClassifier(
-                    bayesian.Class[]{Good, Bad}
+    classifier := NewClassifier(
+                    Class[]{Good, Bad}
                   )
 
     classifier.Learn(

@@ -15,7 +15,7 @@ func Assert(t *testing.T, condition bool, args ...interface{}) {
 }
 
 func TestEmpty(t *testing.T) {
-    c := New([]Class{"Good", "Bad", "Neutral"})
+    c := NewClassifier([]Class{"Good", "Bad", "Neutral"})
     priors := c.getPriors()
     for _, item := range priors {
         Assert(t, item == 0)
@@ -23,7 +23,7 @@ func TestEmpty(t *testing.T) {
 }
 
 func TestLearn(t *testing.T) {
-    c := New([]Class{Good, Bad})
+    c := NewClassifier([]Class{Good, Bad})
     c.Learn([]string{"tall", "handsome", "rich"}, Good)
     c.Learn([]string{"bald", "poor", "ugly"}, Bad)
     
