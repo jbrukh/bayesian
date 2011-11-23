@@ -10,19 +10,23 @@ Classifiers. To install, simply:
 To use the classifier, first you must create some classes
 and train your classifier:
 
+    import "bayesian"
+
     const (
-        Good Class = "good"
-        Bad Class = "bad"
+        Good bayesian.Class = "good"
+        Bad bayesian.Class = "bad"
     )
     
     classifier := bayesian.NewClassifier(
                     bayesian.Class[]{Good, Bad}
                   )
 
-    classifier.Learn([]string{"tall", "rich",
-                     "handsome"}, Good)
-    classifier.Learn([]string{"poor", "smelly",
-                     "ugly"}, Bad)
+    classifier.Learn(
+            []string{"tall", "rich", "handsome"}, Good
+            )
+    classifier.Learn(
+            []string{"poor", "smelly", "ugly"}, Bad
+            )
 
 Then you can ascertain the probabilities of each class and
 the most likely class your data belongs to:
