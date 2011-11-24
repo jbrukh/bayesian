@@ -44,6 +44,9 @@ package bayesian
 // we have not seen before appears in the class. 
 const defaultProb = 0.001
 
+// the type of float we use here
+type float float64
+
 // This type defines a set of classes that the classifier will
 // filter: C = {C_1, ..., C_n}. You should define your classes
 // as a set of constants, for example as follows:
@@ -79,18 +82,18 @@ func newClassData() *classData {
 
 // P(W|Cj) -- the probability of seeing a particular word
 // in a document of this class.
-func (this *classData) getWordProb(word string) float64 {
+func (this *classData) getWordProb(word string) float {
     value, ok := this.freqs[word]
     if !ok {
         return defaultProb
     }
-    return float64(value)/float64(this.total)
+    return float(value)/float(this.total)
 }
 
 // P(D|C_j) -- the probability of seeing this set of words
 // in a document of this class. Note that words should not
 // be empty.
-func (this *classData) getWordsProb(words []string) (prob float64) {
+func (this *classData) getWordsProb(words []string) (prob float) {
     prob = 1
     for _, word := range words {
         prob *= this.getWordProb(word)
@@ -116,18 +119,18 @@ func NewClassifier(classes ...Class) (inst *Classifier) {
 // getPriors returns the prior probabilities for the
 // classes provided -- P(C_i). There is a way to
 // smooth priors, currently not implemented here.
-func (this *Classifier) getPriors() (priors []float64) {
+func (this *Classifier) getPriors() (priors []float) {
     n := len(this.Classes)
-    priors = make([]float64, n, n)
+    priors = make([]float, n, n)
     sum := 0
     for index, class := range this.Classes {
         total := this.datas[class].total;
-        priors[index] = float64(total)
+        priors[index] = float(total)
         sum += total
     }
     if sum != 0 {
         for i := 0; i < n; i++ {
-            priors[i] /= float64(sum)
+            priors[i] /= float(sum)
         }
     }
     return
@@ -155,11 +158,11 @@ func (this *Classifier) Learn(words []string, which Class) {
 // is classifier.Classes[inx]. If more than one of the
 // returned probabilities has the maximum values, then
 // strict is false.
-func (this *Classifier) Score(words []string) (scores []float64, inx int, strict bool) {
+func (this *Classifier) Score(words []string) (scores []float, inx int, strict bool) {
     n := len(this.Classes)
-    scores = make([]float64, n, n)
+    scores = make([]float, n, n)
     priors := this.getPriors()
-    sum := float64(0)
+    sum := float(0)
     for index, class := range this.Classes {
         data := this.datas[class]
         score := priors[index]*data.getWordsProb(words)

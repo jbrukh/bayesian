@@ -71,6 +71,6 @@ func TestWordProbs(t *testing.T) {
     c.Learn([]string{"tall", "handsome", "rich"}, Good)
     data := c.datas[Good]
     Assert(t, data.total == 3)
-    Assert(t, data.getWordProb("tall") == float64(1)/float64(3))
-    Assert(t, data.getWordsProb([]string{"tall","rich"}) == float64(1)/float64(9))
+    Assert(t, data.getWordProb("tall") == float(1)/float(3), "tall")
+    Assert(t, data.getWordProb("rich") == float(1)/float(3), "rich")
 }
