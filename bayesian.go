@@ -127,12 +127,7 @@ func (this *Classifier) getPriors() (priors []float32) {
 func (this *Classifier) Learn(words []string, which Class) {
     data := this.datas[which]
     for _, word := range words {
-        _, present := data.freqs[word]
-        if !present {
-            data.freqs[word] = 1
-        } else {
-            data.freqs[word]++
-        }
+        data.freqs[word]++
         data.total++
     }
 }

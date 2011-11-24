@@ -44,4 +44,7 @@ func TestLearn(t *testing.T) {
     Assert(t, score[0]==score[1], "not the same") // same
     Assert(t, likely == Good, "not good") // first one is picked
     Assert(t, strict == false, "not strict")
+
+    score, likely, strict  = c.Score([]string{"poor", "rich", "man", "tall"})
+    fmt.Printf("%v\n", score)
 }
