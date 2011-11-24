@@ -94,7 +94,7 @@ func (this *classData) getWordsProb(words []string) (prob float64) {
 }
 
 // New creates a new Classifier.
-func NewClassifier(classes []Class) (inst *Classifier) {
+func NewClassifier(classes ...Class) (inst *Classifier) {
     if len(classes) < 2 {
         panic("provide at least two classes")
     }

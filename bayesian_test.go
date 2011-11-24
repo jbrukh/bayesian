@@ -15,7 +15,7 @@ func Assert(t *testing.T, condition bool, args ...interface{}) {
 }
 
 func TestEmpty(t *testing.T) {
-    c := NewClassifier([]Class{"Good", "Bad", "Neutral"})
+    c := NewClassifier("Good", "Bad", "Neutral")
     priors := c.getPriors()
     for _, item := range priors {
         Assert(t, item == 0)
@@ -26,10 +26,9 @@ func TestNoClasses(t *testing.T) {
     defer func() {
         if err := recover(); err != nil {
             // we are good
-            fmt.Println("panicked and recovered:", err)
         }
     }()
-    c := NewClassifier(nil)
+    c := NewClassifier()
     Assert(t, false, "should have panicked:", c)
 }
 
@@ -37,15 +36,14 @@ func TestOneClass(t *testing.T) {
     defer func() {
         if err := recover(); err != nil {
             // we are good
-            fmt.Println("panicked and recovered:", err)
         }
     }()
-    c := NewClassifier([]Class{Good})
+    c := NewClassifier(Good)
     Assert(t, false, "should have panicked:", c)
 }
 
 func TestLearn(t *testing.T) {
-    c := NewClassifier([]Class{Good, Bad})
+    c := NewClassifier(Good, Bad)
     c.Learn([]string{"tall", "handsome", "rich"}, Good)
     c.Learn([]string{"bald", "poor", "ugly"}, Bad)
     
@@ -66,7 +64,4 @@ func TestLearn(t *testing.T) {
     Assert(t, score[0]==score[1], "not the same") // same
     Assert(t, likely == Good, "not good") // first one is picked
     Assert(t, strict == false, "not strict")
-
-    score, likely, strict  = c.Score([]string{"poor", "rich", "man", "tall"})
-    fmt.Printf("%v\n", score)
 }

@@ -21,16 +21,11 @@ and train it:
         Bad Class = "bad"
     )
     
-    classifier := NewClassifier(
-                    Class[]{Good, Bad}
-                  )
-
-    classifier.Learn(
-            []string{"tall", "rich", "handsome"}, Good
-            )
-    classifier.Learn(
-            []string{"poor", "smelly", "ugly"}, Bad
-            )
+    classifier := NewClassifier(Good, Bad)
+    goodStuff := []string{"tall", "rich", "handsome"}
+    badStuff  := []string{"poor", "smelly", "ugly"}
+    classifier.Learn(goodStuff, Good)
+    classifier.Learn(badStuff,  Bad)
 
 Then you can ascertain the probabilities of each class and
 the most likely class your data belongs to:
