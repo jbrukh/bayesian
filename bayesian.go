@@ -95,9 +95,13 @@ func (this *classData) getWordsProb(words []string) (prob float64) {
 
 // New creates a new Classifier.
 func NewClassifier(classes []Class) (inst *Classifier) {
-    inst = new(Classifier)
-    inst.classes = classes
-    inst.datas = make(map[Class]*classData)
+    if len(classes) < 2 {
+        panic("provide at least two classes")
+    }
+    inst = &Classifier{
+            classes,
+            make(map[Class]*classData),
+    }
     for _, class := range classes {
         inst.datas[class] = newClassData()
     }

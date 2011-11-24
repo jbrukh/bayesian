@@ -22,6 +22,28 @@ func TestEmpty(t *testing.T) {
     }
 }
 
+func TestNoClasses(t *testing.T) {
+    defer func() {
+        if err := recover(); err != nil {
+            // we are good
+            fmt.Println("panicked and recovered:", err)
+        }
+    }()
+    c := NewClassifier(nil)
+    Assert(t, false, "should have panicked:", c)
+}
+
+func TestOneClass(t *testing.T) {
+    defer func() {
+        if err := recover(); err != nil {
+            // we are good
+            fmt.Println("panicked and recovered:", err)
+        }
+    }()
+    c := NewClassifier([]Class{Good})
+    Assert(t, false, "should have panicked:", c)
+}
+
 func TestLearn(t *testing.T) {
     c := NewClassifier([]Class{Good, Bad})
     c.Learn([]string{"tall", "handsome", "rich"}, Good)
