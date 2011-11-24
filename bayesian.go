@@ -75,22 +75,22 @@ func newClassData() *classData {
 }
 
 // P(W|Cj)
-func (this *classData) getWordProb(word string) float32 {
+func (this *classData) getWordProb(word string) float64 {
     value, ok := this.freqs[word]
     if !ok {
         return defaultProb
     }
-    return float32(value)/float32(this.total)
+    return float64(value)/float64(this.total)
 }
 
 // P(D|C_j)
 // Note that words should not be empty
-func (this *classData) getWordsProb(words []string) (prob float32) {
+func (this *classData) getWordsProb(words []string) (prob float64) {
     prob = 1
     for _, word := range words {
         prob *= this.getWordProb(word)
     }
-    return prob
+    return
 }
 
 // New creates a new Classifier.
@@ -106,18 +106,18 @@ func NewClassifier(classes []Class) (inst *Classifier) {
 
 // getPriors returns the prior probabilities for the
 // classes provided -- P(C_i).
-func (this *Classifier) getPriors() (priors []float32) {
+func (this *Classifier) getPriors() (priors []float64) {
     n := len(this.classes)
-    priors = make([]float32, n, n)
+    priors = make([]float64, n, n)
     sum := 0
     for index, class := range this.classes {
         total := this.datas[class].total;
-        priors[index] = float32(total)
+        priors[index] = float64(total)
         sum += total
     }
     if sum != 0 {
         for i := 0; i < n; i++ {
-            priors[i] /= float32(sum)
+            priors[i] /= float64(sum)
         }
     }
     return
@@ -143,11 +143,11 @@ func (this *Classifier) Learn(words []string, which Class) {
 // as well whether this maximum is strict. If it is not strict,
 // this means that more than one class has the same maximum
 // probability.
-func (this *Classifier) Score(words []string) (scores []float32, likely Class, strict bool) {
+func (this *Classifier) Score(words []string) (scores []float64, likely Class, strict bool) {
     n := len(this.classes)
-    scores = make([]float32, n, n)
+    scores = make([]float64, n, n)
     priors := this.getPriors()
-    sum := float32(0)
+    sum := float64(0)
     for index, class := range this.classes {
         data := this.datas[class]
         score := priors[index]*data.getWordsProb(words)
