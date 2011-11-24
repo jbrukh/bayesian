@@ -50,19 +50,19 @@ func TestLearn(t *testing.T) {
     score, likely, strict := c.Score([]string{"the", "tall", "man"})
     fmt.Printf("%v\n", score)
     Assert(t, score[0]>score[1], "not good, round 1") // this is good
-    Assert(t, likely == Good, "not good, round 1")
+    Assert(t, likely == 0, "not good, round 1")
     Assert(t, strict == true, "not strict, round 1")
      
     score, likely, strict = c.Score([]string{"poor", "ugly", "girl"})
     fmt.Printf("%v\n", score)
     Assert(t, score[0]<score[1]) // this is bad
-    Assert(t, likely == Bad)
+    Assert(t, likely == 1)
     Assert(t, strict == true)
     
     score, likely, strict  = c.Score([]string{"the", "bad", "man"})
     fmt.Printf("%v\n", score)
     Assert(t, score[0]==score[1], "not the same") // same
-    Assert(t, likely == Good, "not good") // first one is picked
+    Assert(t, likely == 0, "not good") // first one is picked
     Assert(t, strict == false, "not strict")
 }
 

@@ -57,7 +57,7 @@ type Class string
 
 // Classifier implements the Naive Bayesian Classifier.
 type Classifier struct {
-    classes []Class
+    Classes []Class
     datas map[Class]*classData
 }
 
@@ -117,10 +117,10 @@ func NewClassifier(classes ...Class) (inst *Classifier) {
 // classes provided -- P(C_i). There is a way to
 // smooth priors, currently not implemented here.
 func (this *Classifier) getPriors() (priors []float64) {
-    n := len(this.classes)
+    n := len(this.Classes)
     priors = make([]float64, n, n)
     sum := 0
-    for index, class := range this.classes {
+    for index, class := range this.Classes {
         total := this.datas[class].total;
         priors[index] = float64(total)
         sum += total
@@ -149,22 +149,24 @@ func (this *Classifier) Learn(words []string, which Class) {
 // of Class objects parameterized to the New() function. If no
 // training data has been provided, this will return a 0 array.
 //
-// Additionally, this function will return the most likely Class,
-// as well whether this maximum is strict. If it is not strict,
-// this means that more than one class has the same maximum
-// probability.
-func (this *Classifier) Score(words []string) (scores []float64, likely Class, strict bool) {
-    n := len(this.classes)
+// Additionally, this function will return the index of the 
+// maximum probability. The value of this number is given by
+// scores[inx]. The class of that corresponds to this number
+// is classifier.Classes[inx]. If more than one of the
+// returned probabilities has the maximum values, then
+// strict is false.
+func (this *Classifier) Score(words []string) (scores []float64, inx int, strict bool) {
+    n := len(this.Classes)
     scores = make([]float64, n, n)
     priors := this.getPriors()
     sum := float64(0)
-    for index, class := range this.classes {
+    for index, class := range this.Classes {
         data := this.datas[class]
         score := priors[index]*data.getWordsProb(words)
         scores[index] = score
         sum += score
     }
-    inx := 0
+    inx = 0
     strict = true
     for i := 0; i < n; i++ {
         scores[i] /= sum
@@ -175,6 +177,5 @@ func (this *Classifier) Score(words []string) (scores []float64, likely Class, s
             strict = false
         }
     }
-    likely = this.classes[inx]
     return
 }
