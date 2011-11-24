@@ -65,3 +65,12 @@ func TestLearn(t *testing.T) {
     Assert(t, likely == Good, "not good") // first one is picked
     Assert(t, strict == false, "not strict")
 }
+
+func TestWordProbs(t *testing.T) {
+    c := NewClassifier(Good, Bad)
+    c.Learn([]string{"tall", "handsome", "rich"}, Good)
+    data := c.datas[Good]
+    Assert(t, data.total == 3)
+    Assert(t, data.getWordProb("tall") == float64(1)/float64(3))
+    Assert(t, data.getWordsProb([]string{"tall","rich"}) == float64(1)/float64(9))
+}

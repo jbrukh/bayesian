@@ -6,7 +6,7 @@
 // of classes (e.g. categories) C := {C_1, ..., C_n}, and a
 // document D consisting of words D := {W_1, ..., W_k}.
 // We wish to ascertain the probability that the document
-// belongs to some class C_j, given some set of training data
+// belongs to some class C_j given some set of training data
 // associating documents and classes.
 //
 // By Bayes Theorem, we have that
@@ -14,24 +14,27 @@
 //    P(C_j|D) = P(D|C_j)*P(C_j)/P(D).
 //
 // The LHS is the probability that the document belongs to class
-// C_j, given the document itself, and our program will calculate
-// this probability for each j and spit out the most likely class.
+// C_j given the document itself (by which is meant, in practice,
+// the word frequencies occurring in this document), and our program
+// will calculate this probability for each j and spit out the
+// most likely class for this document.
+//
 // P(C_j) is referred to as the "prior" probability, or the
 // probability that a document belongs to C_j in general, without
 // seeing the document first. P(D|C_j) is the probability of seeing
 // such a document, given that it belongs to C_j. Here, by assuming
-// that words appear independently in documents (e.g. naive
-// assumption), we can estimate
+// that words appear independently in documents (this being the 
+// "naive" assumption), we can estimate
 //
 //    P(D|C_j) ~= P(W_1|C_j)*...*P(W_k|C_j)
 //
-// where P(W_l|C_j) is the probability of seeing the given word
-// in a document of the given class. Finally, P(D) is merely a
-// scaling factor and is not particularly relevant, unless you want
-// to normalize the resulting scores and actually see
-// probabilities. In this case, note that
+// where P(W_i|C_j) is the probability of seeing the given word
+// in a document of the given class. Finally, P(D) can be seen as 
+// merely a scaling factor and is not strictly relevant to
+// classificiation, unless you want to normalize the resulting
+// scores and actually see probabilities. In this case, note that
 //
-//    P(D) = SUM_j(P(D|C_j)*P(C_j)
+//    P(D) = SUM_j(P(D|C_j)*P(C_j))
 //
 // End of refresher.
 //
@@ -46,8 +49,8 @@ const defaultProb = 0.001
 // as a set of constants, for example as follows:
 //
 //    const (
-//        Good Class = "good"
-//        Bad Class = "bad
+//        Good Class = "Good"
+//        Bad Class = "Bad
 //    )
 //
 type Class string
@@ -74,7 +77,8 @@ func newClassData() *classData {
     }
 }
 
-// P(W|Cj)
+// P(W|Cj) -- the probability of seeing a particular word
+// in a document of this class.
 func (this *classData) getWordProb(word string) float64 {
     value, ok := this.freqs[word]
     if !ok {
@@ -83,8 +87,9 @@ func (this *classData) getWordProb(word string) float64 {
     return float64(value)/float64(this.total)
 }
 
-// P(D|C_j)
-// Note that words should not be empty
+// P(D|C_j) -- the probability of seeing this set of words
+// in a document of this class. Note that words should not
+// be empty.
 func (this *classData) getWordsProb(words []string) (prob float64) {
     prob = 1
     for _, word := range words {
@@ -109,7 +114,8 @@ func NewClassifier(classes ...Class) (inst *Classifier) {
 }
 
 // getPriors returns the prior probabilities for the
-// classes provided -- P(C_i).
+// classes provided -- P(C_i). There is a way to
+// smooth priors, currently not implemented here.
 func (this *Classifier) getPriors() (priors []float64) {
     n := len(this.classes)
     priors = make([]float64, n, n)
