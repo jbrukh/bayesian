@@ -36,9 +36,23 @@
 //
 //    P(D) = SUM_j(P(D|C_j)*P(C_j))
 //
-// End of refresher.
+// One practical issue with performing these calculations is the
+// possibility of float underflow when calculating P(D|C_j), as
+// individual word probabilities can be arbitrarily small, and
+// a document can have an arbitrarily large number of them. A
+// typical method for dealing with this case is to transform the
+// probability to the log domain and perform additions instead
+// of multiplications:
+//
+//   log P(C_j|D) ~ log(P(C_j)) + SUM_i(log P(W_i|C_j))
+//
+// where i = 1, ..., k. Note that by doing this, we are discarding
+// the scaling factor P(D) and our scores are no longer
+// probabilities.
 //
 package bayesian
+
+import "math"
 
 // defaultProb is the tiny non-zero probability that a word
 // we have not seen before appears in the class. 
@@ -91,8 +105,11 @@ func (this *classData) getWordProb(word string) float {
 }
 
 // P(D|C_j) -- the probability of seeing this set of words
-// in a document of this class. Note that words should not
-// be empty.
+// in a document of this class.
+//
+// Note that words should not be empty, and this method of
+// calulation is prone to underflow if there are many words
+// and their individual probabilties are small.
 func (this *classData) getWordsProb(words []string) (prob float) {
     prob = 1
     for _, word := range words {
@@ -145,12 +162,17 @@ func (this *Classifier) Learn(words []string, which Class) {
     }
 }
 
-// Score will produce an array of probabilities that correspond
+// Score will produce an array of scores that correspond
 // to its opinion on the document in question, and whether it
-// belongs to the given class. The order of the probabilities
+// belongs to the given class. The order of the scores
 // in the return values follows the order of the inital array
-// of Class objects parameterized to the New() function. If no
-// training data has been provided, this will return a 0 array.
+// of Class objects parameterized to the NewClassifier() function.
+// If no training data has been provided, this will return
+// a 0 array.
+//
+// The value of the score is proportional to the likelihood,
+// even if the score is negative, so that the score with the
+// greatest value corresponds to the most likely class.
 //
 // Additionally, this function will return the index of the 
 // maximum probability. The value of this number is given by
@@ -162,21 +184,27 @@ func (this *Classifier) Score(words []string) (scores []float, inx int, strict b
     n := len(this.Classes)
     scores = make([]float, n, n)
     priors := this.getPriors()
-    sum := float(0)
+
+    // calculate the score for each class
     for index, class := range this.Classes {
         data := this.datas[class]
-        score := priors[index]*data.getWordsProb(words)
-        scores[index] = score
-        sum += score
+        // this is the sum of the logarithms 
+        // as outlined in the refresher
+        score := math.Log(float64(priors[index]))
+        for _, word := range words {
+            score += math.Log(float64(data.getWordProb(word)))
+        }
+        scores[index] = float(score)
     }
+
+    // calculate the index of the maximum score
     inx = 0
     strict = true
-    for i := 0; i < n; i++ {
-        scores[i] /= sum
+    for i := 1; i < n; i++ {
         if scores[inx] < scores[i] {
             inx = i
             strict = true
-        } else if scores[inx] == scores[i] && i != 0 {
+        } else if scores[inx] == scores[i] {
             strict = false
         }
     }
