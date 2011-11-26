@@ -196,11 +196,42 @@ func (this *Classifier) Score(words []string) (scores []float, inx int, strict b
         }
         scores[index] = float(score)
     }
+    inx, strict = findMax(scores)
+    return scores, inx, strict 
+}
 
-    // calculate the index of the maximum score
+// Probabilities works the same as Score, but delivers
+// actual probabilities as discussed above. Note that float
+// underflow is possible if the word list contains too
+// many words that have probabilities very close to 0.
+func (this *Classifier) Probabilities(words []string) (scores []float, inx int, strict bool) {
+    n := len(this.Classes)
+    scores = make([]float, n, n)
+    priors := this.getPriors()
+    sum := float(0)
+    // calculate the score for each class
+    for index, class := range this.Classes {
+        data := this.datas[class]
+        // this is the sum of the logarithms 
+        // as outlined in the refresher
+        score := priors[index]
+        for _, word := range words {
+            score *= data.getWordProb(word)
+        }
+        scores[index] = score
+        sum += score
+    }
+    for i := 0; i < n; i++ {
+        scores[i] /= sum
+    }
+    inx, strict = findMax(scores)
+    return scores, inx, strict
+}
+
+func findMax(scores []float) (inx int, strict bool) {
     inx = 0
     strict = true
-    for i := 1; i < n; i++ {
+    for i := 1; i < len(scores); i++ {
         if scores[inx] < scores[i] {
             inx = i
             strict = true
