@@ -37,7 +37,7 @@
 //    P(D) = SUM_j(P(D|C_j)*P(C_j))
 //
 // One practical issue with performing these calculations is the
-// possibility of float underflow when calculating P(D|C_j), as
+// possibility of float64 underflow when calculating P(D|C_j), as
 // individual word probabilities can be arbitrarily small, and
 // a document can have an arbitrarily large number of them. A
 // typical method for dealing with this case is to transform the
@@ -57,9 +57,6 @@ import "math"
 // defaultProb is the tiny non-zero probability that a word
 // we have not seen before appears in the class. 
 const defaultProb = 0.001
-
-// the type of float we use here
-type float float64
 
 // This type defines a set of classes that the classifier will
 // filter: C = {C_1, ..., C_n}. You should define your classes
@@ -96,12 +93,12 @@ func newClassData() *classData {
 
 // P(W|Cj) -- the probability of seeing a particular word
 // in a document of this class.
-func (this *classData) getWordProb(word string) float {
+func (this *classData) getWordProb(word string) float64 {
     value, ok := this.freqs[word]
     if !ok {
         return defaultProb
     }
-    return float(value)/float(this.total)
+    return float64(value)/float64(this.total)
 }
 
 // P(D|C_j) -- the probability of seeing this set of words
@@ -110,7 +107,7 @@ func (this *classData) getWordProb(word string) float {
 // Note that words should not be empty, and this method of
 // calulation is prone to underflow if there are many words
 // and their individual probabilties are small.
-func (this *classData) getWordsProb(words []string) (prob float) {
+func (this *classData) getWordsProb(words []string) (prob float64) {
     prob = 1
     for _, word := range words {
         prob *= this.getWordProb(word)
@@ -136,18 +133,18 @@ func NewClassifier(classes ...Class) (inst *Classifier) {
 // getPriors returns the prior probabilities for the
 // classes provided -- P(C_i). There is a way to
 // smooth priors, currently not implemented here.
-func (this *Classifier) getPriors() (priors []float) {
+func (this *Classifier) getPriors() (priors []float64) {
     n := len(this.Classes)
-    priors = make([]float, n, n)
+    priors = make([]float64, n, n)
     sum := 0
     for index, class := range this.Classes {
         total := this.datas[class].total;
-        priors[index] = float(total)
+        priors[index] = float64(total)
         sum += total
     }
     if sum != 0 {
         for i := 0; i < n; i++ {
-            priors[i] /= float(sum)
+            priors[i] /= float64(sum)
         }
     }
     return
@@ -180,9 +177,9 @@ func (this *Classifier) Learn(words []string, which Class) {
 // is classifier.Classes[inx]. If more than one of the
 // returned probabilities has the maximum values, then
 // strict is false.
-func (this *Classifier) Score(words []string) (scores []float, inx int, strict bool) {
+func (this *Classifier) Score(words []string) (scores []float64, inx int, strict bool) {
     n := len(this.Classes)
-    scores = make([]float, n, n)
+    scores = make([]float64, n, n)
     priors := this.getPriors()
 
     // calculate the score for each class
@@ -190,25 +187,25 @@ func (this *Classifier) Score(words []string) (scores []float, inx int, strict b
         data := this.datas[class]
         // this is the sum of the logarithms 
         // as outlined in the refresher
-        score := math.Log(float64(priors[index]))
+        score := math.Log(priors[index])
         for _, word := range words {
-            score += math.Log(float64(data.getWordProb(word)))
+            score += math.Log(data.getWordProb(word))
         }
-        scores[index] = float(score)
+        scores[index] = score
     }
     inx, strict = findMax(scores)
     return scores, inx, strict 
 }
 
 // Probabilities works the same as Score, but delivers
-// actual probabilities as discussed above. Note that float
+// actual probabilities as discussed above. Note that float64
 // underflow is possible if the word list contains too
 // many words that have probabilities very close to 0.
-func (this *Classifier) Probabilities(words []string) (scores []float, inx int, strict bool) {
+func (this *Classifier) Probabilities(words []string) (scores []float64, inx int, strict bool) {
     n := len(this.Classes)
-    scores = make([]float, n, n)
+    scores = make([]float64, n, n)
     priors := this.getPriors()
-    sum := float(0)
+    sum := float64(0)
     // calculate the score for each class
     for index, class := range this.Classes {
         data := this.datas[class]
@@ -228,7 +225,7 @@ func (this *Classifier) Probabilities(words []string) (scores []float, inx int, 
     return scores, inx, strict
 }
 
-func findMax(scores []float) (inx int, strict bool) {
+func findMax(scores []float64) (inx int, strict bool) {
     inx = 0
     strict = true
     for i := 1; i < len(scores); i++ {
