@@ -225,6 +225,10 @@ func (this *Classifier) Probabilities(words []string) (scores []float64, inx int
     return scores, inx, strict
 }
 
+// findMax finds the maximum of a set of scores; if the
+// maximum is strict -- that is, it is the single unique
+// maximum from the set -- then strict has return value
+// true. Otherwise it is false.
 func findMax(scores []float64) (inx int, strict bool) {
     inx = 0
     strict = true
