@@ -93,12 +93,12 @@ func newClassData() *classData {
 
 // P(W|Cj) -- the probability of seeing a particular word
 // in a document of this class.
-func (this *classData) getWordProb(word string) float64 {
-    value, ok := this.freqs[word]
+func (d *classData) getWordProb(word string) float64 {
+    value, ok := d.freqs[word]
     if !ok {
         return defaultProb
     }
-    return float64(value)/float64(this.total)
+    return float64(value)/float64(d.total)
 }
 
 // P(D|C_j) -- the probability of seeing this set of words
@@ -107,15 +107,16 @@ func (this *classData) getWordProb(word string) float64 {
 // Note that words should not be empty, and this method of
 // calulation is prone to underflow if there are many words
 // and their individual probabilties are small.
-func (this *classData) getWordsProb(words []string) (prob float64) {
+func (d *classData) getWordsProb(words []string) (prob float64) {
     prob = 1
     for _, word := range words {
-        prob *= this.getWordProb(word)
+        prob *= d.getWordProb(word)
     }
     return
 }
 
-// New creates a new Classifier.
+// New creates a new Classifier. The classes the provided
+// should be at least 2 in number and unique from each other.
 func NewClassifier(classes ...Class) (inst *Classifier) {
     if len(classes) < 2 {
         panic("provide at least two classes")
@@ -133,12 +134,12 @@ func NewClassifier(classes ...Class) (inst *Classifier) {
 // getPriors returns the prior probabilities for the
 // classes provided -- P(C_i). There is a way to
 // smooth priors, currently not implemented here.
-func (this *Classifier) getPriors() (priors []float64) {
-    n := len(this.Classes)
+func (c *Classifier) getPriors() (priors []float64) {
+    n := len(c.Classes)
     priors = make([]float64, n, n)
     sum := 0
-    for index, class := range this.Classes {
-        total := this.datas[class].total;
+    for index, class := range c.Classes {
+        total := c.datas[class].total;
         priors[index] = float64(total)
         sum += total
     }
@@ -151,41 +152,41 @@ func (this *Classifier) getPriors() (priors []float64) {
 }
 
 // Learn will train the classifier on the provided data.
-func (this *Classifier) Learn(words []string, which Class) {
-    data := this.datas[which]
+func (c *Classifier) Learn(words []string, which Class) {
+    data := c.datas[which]
     for _, word := range words {
         data.freqs[word]++
         data.total++
     }
 }
 
-// Score will produce an array of scores that correspond
+// Scores will produce an array of scores that correspond
 // to its opinion on the document in question, and whether it
 // belongs to the given class. The order of the scores
 // in the return values follows the order of the inital array
 // of Class objects parameterized to the NewClassifier() function.
-// If no training data has been provided, this will return
+// If no training data has been provided, c will return
 // a 0 array.
 //
 // The value of the score is proportional to the likelihood,
 // even if the score is negative, so that the score with the
 // greatest value corresponds to the most likely class.
 //
-// Additionally, this function will return the index of the 
-// maximum probability. The value of this number is given by
-// scores[inx]. The class of that corresponds to this number
+// Additionally, c function will return the index of the 
+// maximum probability. The value of c number is given by
+// scores[inx]. The class of that corresponds to c number
 // is classifier.Classes[inx]. If more than one of the
 // returned probabilities has the maximum values, then
 // strict is false.
-func (this *Classifier) Score(words []string) (scores []float64, inx int, strict bool) {
-    n := len(this.Classes)
+func (c *Classifier) Scores(words []string) (scores []float64, inx int, strict bool) {
+    n := len(c.Classes)
     scores = make([]float64, n, n)
-    priors := this.getPriors()
+    priors := c.getPriors()
 
     // calculate the score for each class
-    for index, class := range this.Classes {
-        data := this.datas[class]
-        // this is the sum of the logarithms 
+    for index, class := range c.Classes {
+        data := c.datas[class]
+        // c is the sum of the logarithms 
         // as outlined in the refresher
         score := math.Log(priors[index])
         for _, word := range words {
@@ -194,25 +195,25 @@ func (this *Classifier) Score(words []string) (scores []float64, inx int, strict
         scores[index] = score
     }
     inx, strict = findMax(scores)
-    return scores, inx, strict 
+    return scores, inx, strict
 }
 
 // Probabilities works the same as Score, but delivers
 // actual probabilities as discussed above. Note that float64
 // underflow is possible if the word list contains too
-// many words that have probabilities very close to 0.
-func (this *Classifier) Probabilities(words []string) (scores []float64, inx int, strict bool) {
-    n := len(this.Classes)
+// many doc that have probabilities very close to 0.
+func (c *Classifier) Probabilities(doc []string) (scores []float64, inx int, strict bool) {
+    n := len(c.Classes)
     scores = make([]float64, n, n)
-    priors := this.getPriors()
+    priors := c.getPriors()
     sum := float64(0)
     // calculate the score for each class
-    for index, class := range this.Classes {
-        data := this.datas[class]
-        // this is the sum of the logarithms 
+    for index, class := range c.Classes {
+        data := c.datas[class]
+        // c is the sum of the logarithms 
         // as outlined in the refresher
         score := priors[index]
-        for _, word := range words {
+        for _, word := range doc {
             score *= data.getWordProb(word)
         }
         scores[index] = score
@@ -229,16 +230,16 @@ func (this *Classifier) Probabilities(words []string) (scores []float64, inx int
 // exist in the classifier for each class state for the given input
 // words. In other words, if you obtain the frequencies
 //
-//    freqs := c.WordFrequencies([]string{"a","b"})
+//    freqs := c.WordFrequencies(/* ... array of j words ... */)
 //
 // then the expression freq[i][j] represents the frequency of the j-th
-// word within the known i-th class.
-func (this *Classifier) WordFrequencies(words []string) (freqMatrix [][]float64) {
-    n, l := len(this.Classes), len(words)
+// word within the i-th class.
+func (c *Classifier) WordFrequencies(words []string) (freqMatrix [][]float64) {
+    n, l := len(c.Classes), len(words)
     freqMatrix = make([][]float64, n)
     for i, _ := range freqMatrix {
         arr := make([]float64, l)
-        data := this.datas[this.Classes[i]]
+        data := c.datas[c.Classes[i]]
         for j, _ := range arr {
             arr[j] = data.getWordProb(words[j])
         }
