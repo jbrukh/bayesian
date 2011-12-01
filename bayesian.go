@@ -56,7 +56,7 @@ import "math"
 
 // defaultProb is the tiny non-zero probability that a word
 // we have not seen before appears in the class. 
-const defaultProb = 0.001
+const defaultProb = 0.00000000001
 
 // This type defines a set of classes that the classifier will
 // filter: C = {C_1, ..., C_n}. You should define your classes
@@ -223,6 +223,28 @@ func (this *Classifier) Probabilities(words []string) (scores []float64, inx int
     }
     inx, strict = findMax(scores)
     return scores, inx, strict
+}
+
+// WordFrequencies returns a matrix of word frequencies that currently
+// exist in the classifier for each class state for the given input
+// words. In other words, if you obtain the frequencies
+//
+//    freqs := c.WordFrequencies([]string{"a","b"})
+//
+// then the expression freq[i][j] represents the frequency of the j-th
+// word within the known i-th class.
+func (this *Classifier) WordFrequencies(words []string) (freqMatrix [][]float64) {
+    n, l := len(this.Classes), len(words)
+    freqMatrix = make([][]float64, n)
+    for i, _ := range freqMatrix {
+        arr := make([]float64, l)
+        data := this.datas[this.Classes[i]]
+        for j, _ := range arr {
+            arr[j] = data.getWordProb(words[j])
+        }
+        freqMatrix[i] = arr
+    }
+    return
 }
 
 // findMax finds the maximum of a set of scores; if the

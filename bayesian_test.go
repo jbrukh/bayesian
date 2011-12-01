@@ -98,3 +98,14 @@ func TestWordProbs(t *testing.T) {
     Assert(t, data.getWordProb("tall") == float64(1)/float64(3), "tall")
     Assert(t, data.getWordProb("rich") == float64(1)/float64(3), "rich")
 }
+
+func TestFreqMatrixConstruction(t *testing.T) {
+    c := NewClassifier(Good, Bad)
+    freqs := c.WordFrequencies([]string{"a", "b"})
+    Assert(t, len(freqs) == 2, "size")
+    for i := 0; i < 2; i++ {
+        for j := 0; j < 2; j++ {
+            Assert(t, freqs[i][j] == defaultProb, i, j)
+        }
+    }
+}
