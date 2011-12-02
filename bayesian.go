@@ -77,6 +77,8 @@ type Class string
 // Classifier implements the Naive Bayesian Classifier.
 type Classifier struct {
     Classes []Class
+    learned int             // docs learned
+    seen int                // docs seen
     datas map[Class]*classData
 }
 
@@ -85,6 +87,8 @@ type Classifier struct {
 // reflection and are therefore writeable by gob.
 type serializableClassifier struct {
     Classes []Class
+    Learned int
+    Seen int
     Datas map[Class]*classData
 }
 
@@ -149,8 +153,8 @@ func NewClassifier(classes ...Class) (c *Classifier) {
     }
     // create the classifier
     c = &Classifier{
-            classes,
-            make(map[Class]*classData, n),
+            Classes: classes,
+            datas: make(map[Class]*classData, n),
     }
     for _, class := range classes {
         c.datas[class] = newClassData()
@@ -170,7 +174,7 @@ func NewClassifierFromFile(name string) (c *Classifier, err os.Error) {
     w := new(serializableClassifier)
     err = dec.Decode(w)
 
-    return &Classifier{w.Classes, w.Datas}, err
+    return &Classifier{w.Classes, w.Learned, w.Seen, w.Datas}, err
 }
 
 // getPriors returns the prior probabilities for the
@@ -195,6 +199,29 @@ func (c *Classifier) getPriors() (priors []float64) {
     return
 }
 
+// Learned returns the number of documents ever learned
+// in the lifetime of this classifier.
+func (c *Classifier) Learned() int {
+    return c.learned
+}
+
+// Seen returns the number of documents ever classified
+// in the lifetime of this classifier.
+func (c *Classifier) Seen() int {
+    return c.seen
+}
+
+// WordCount returns the number of words counted for
+// each class in the lifetime of the classifier.
+func (c *Classifier) WordCount() (result []int) {
+    result = make([]int, len(c.Classes))
+    for inx, class := range c.Classes {
+        data := c.datas[class]
+        result[inx] = data.Total
+    }
+    return
+}
+
 // Learn will accept new training documents for
 // supervised learning.
 func (c *Classifier) Learn(document []string, which Class) {
@@ -203,6 +230,7 @@ func (c *Classifier) Learn(document []string, which Class) {
         data.Freqs[word]++
         data.Total++
     }
+    c.learned++
 }
 
 // LogScores produces "log-likelihood"-like scores that can
@@ -241,6 +269,7 @@ func (c *Classifier) LogScores(document []string) (scores []float64, inx int, st
         scores[index] = score
     }
     inx, strict = findMax(scores)
+    c.seen++
     return scores, inx, strict
 }
 
@@ -275,6 +304,7 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
         scores[i] /= sum
     }
     inx, strict = findMax(scores)
+    c.seen++
     return scores, inx, strict
 }
 
@@ -320,6 +350,7 @@ func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, st
     if inx != logInx || strict != logStrict {
         panic("possible underflow detected")
     }
+    c.seen++
     return scores, inx, strict
 }
 
@@ -353,20 +384,10 @@ func (c *Classifier) WriteToFile(name string) (err os.Error) {
         return err
     }
     enc := gob.NewEncoder(file)
-    err = enc.Encode(&serializableClassifier{c.Classes, c.datas})
+    err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas})
     return
 }
 
-// Seen returns the number of words seen for
-// each class, in the lifetime of the classifier.
-func (c *Classifier) Seen() (result []int) {
-    result = make([]int, len(c.Classes))
-    for inx, class := range c.Classes {
-        data := c.datas[class]
-        result[inx] = data.Total
-    }
-    return
-}
 
 // findMax finds the maximum of a set of scores; if the
 // maximum is strict -- that is, it is the single unique

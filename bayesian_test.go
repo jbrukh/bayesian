@@ -102,6 +102,33 @@ func TestProbScores(t *testing.T) {
     Assert(t, strict == false, "not strict")
 }
 
+func TestSeenLearned(t *testing.T) {
+    c := NewClassifier(Good, Bad)
+    c.Learn([]string{"tall", "handsome", "rich"}, Good)
+    c.Learn([]string{"bald", "poor", "ugly"}, Bad)
+    doc1 := []string{"hehe"}
+    doc2 := []string{}
+    doc3 := []string{"ayaya", "ppo", "lim", "inf"}
+    var scores []float64
+    scores, _, _ = c.LogScores(doc1)
+    scores, _, _ = c.LogScores(doc2)
+    scores, _, _ = c.LogScores(doc3)
+    scores, _, _ = c.ProbScores(doc1)
+    scores, _, _ = c.ProbScores(doc2)
+    scores, _, _ = c.ProbScores(doc3)
+    scores, _, _ = c.SafeProbScores(doc1)
+    scores, _, _ = c.SafeProbScores(doc2)
+    scores, _, _ = c.SafeProbScores(doc3)
+    println(scores)
+    Assert(t, c.Learned() == 2, "learned")
+    Assert(t, c.Seen() == 9, "seen")
+    count := c.WordCount()
+    Assert(t, count[0] == 3, "counted-good")
+    Assert(t, count[1] == 3, "counted-bad")
+    Assert(t, c.Learned() == 2, "learned")
+
+}
+
 func TestInduceUnderflow(t *testing.T) {
     defer func() {
         if err := recover(); err != nil {
@@ -127,7 +154,7 @@ func TestLogScores(t *testing.T) {
     Assert(t, data.Total == 3)
     Assert(t, data.getWordProb("tall") == float64(1)/float64(3), "tall")
     Assert(t, data.getWordProb("rich") == float64(1)/float64(3), "rich")
-    Assert(t, c.Seen()[0] == 3)
+    Assert(t, c.WordCount()[0] == 3)
 }
 
 func TestGobs(t *testing.T) {
@@ -138,10 +165,17 @@ func TestGobs(t *testing.T) {
     d, err := NewClassifierFromFile("test.ser")
     Assert(t, err == nil, "could not read:", err)
     fmt.Printf("%v\n", d)
+    scores, _, _ := d.LogScores([]string{"a","b","c"})
+    println(scores)
     data := d.datas[Good]
     Assert(t, data.Total == 3)
     Assert(t, data.getWordProb("tall") == float64(1)/float64(3), "tall")
     Assert(t, data.getWordProb("rich") == float64(1)/float64(3), "rich")
+    Assert(t, d.Learned() == 1)
+    count := d.WordCount()
+    Assert(t, count[0] == 3)
+    Assert(t, count[1] == 0)
+    Assert(t, d.Seen() == 1)
     // remove the file
     err = os.Remove("test.ser")
     Assert(t, err == nil, "could not remove test file:", err)
