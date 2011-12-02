@@ -286,6 +286,17 @@ func (c *Classifier) WriteToFile(name string) (err os.Error) {
     return
 }
 
+// Seen returns the number of words seen for
+// each class.
+func (c *Classifier) Seen() (result []int) {
+    result = make([]int, len(c.Classes))
+    for inx, class := range c.Classes {
+        data := c.datas[class]
+        result[inx] = data.Total
+    }
+    return
+}
+
 // findMax finds the maximum of a set of scores; if the
 // maximum is strict -- that is, it is the single unique
 // maximum from the set -- then strict has return value

@@ -98,6 +98,7 @@ func TestWordProbs(t *testing.T) {
     Assert(t, data.Total == 3)
     Assert(t, data.getWordProb("tall") == float64(1)/float64(3), "tall")
     Assert(t, data.getWordProb("rich") == float64(1)/float64(3), "rich")
+    Assert(t, c.Seen()[0] == 3)
 }
 
 func TestGobs(t *testing.T) {
