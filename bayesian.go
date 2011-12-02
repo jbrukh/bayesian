@@ -244,11 +244,17 @@ func (c *Classifier) LogScores(document []string) (scores []float64, inx int, st
     return scores, inx, strict
 }
 
-// Probabilities works the same as Score, but delivers
+// ProbScores works the same as LogScores, but delivers
 // actual probabilities as discussed above. Note that float64
 // underflow is possible if the word list contains too
 // many words that have probabilities very close to 0.
-func (c *Classifier) Probabilities(doc []string) (scores []float64, inx int, strict bool) {
+//
+// Notes on underflow: underflow is going to occur when you're
+// trying to assess large numbers of words that you have
+// never seen before. Depending on the application, this
+// may or may not be a concern. Consider using SafeProbScores()
+// instead.
+func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict bool) {
     n := len(c.Classes)
     scores = make([]float64, n, n)
     priors := c.getPriors()
@@ -271,6 +277,52 @@ func (c *Classifier) Probabilities(doc []string) (scores []float64, inx int, str
     inx, strict = findMax(scores)
     return scores, inx, strict
 }
+
+
+// SafeProbScores works the same as ProbScores, but is
+// able to detect underflow. If an underflow is detected,
+// this method panics, allowing the user to recover as
+// necessary.
+//
+// Underflow detection is more costly because it also
+// has to make additional log score calculations.
+func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool) {
+    n := len(c.Classes)
+    scores = make([]float64, n, n)
+    logScores := make([]float64, n, n)
+    priors := c.getPriors()
+    sum := float64(0)
+    // calculate the score for each class
+    for index, class := range c.Classes {
+        data := c.datas[class]
+        // c is the sum of the logarithms 
+        // as outlined in the refresher
+        score := priors[index]
+        logScore := math.Log(priors[index])
+        for _, word := range doc {
+            p := data.getWordProb(word)
+            score *= p
+            logScore += math.Log(p)
+        }
+        scores[index] = score
+        logScores[index] = logScore
+        sum += score
+    }
+    for i := 0; i < n; i++ {
+        scores[i] /= sum
+    }
+    inx, strict = findMax(scores)
+    logInx, logStrict := findMax(logScores)
+
+    // detect underflow -- the size
+    // relation between scores and logScores
+    // must be preserved or something is wrong
+    if inx != logInx || strict != logStrict {
+        panic("possible underflow detected")
+    }
+    return scores, inx, strict
+}
+
 
 // WordFrequencies returns a matrix of word frequencies that currently
 // exist in the classifier for each class state for the given input
