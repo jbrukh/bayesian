@@ -2,6 +2,7 @@ package bayesian
 
 import "testing"
 import "fmt"
+import "os"
 
 const (
     Good Class = "good"
@@ -94,9 +95,26 @@ func TestWordProbs(t *testing.T) {
     c := NewClassifier(Good, Bad)
     c.Learn([]string{"tall", "handsome", "rich"}, Good)
     data := c.datas[Good]
-    Assert(t, data.total == 3)
+    Assert(t, data.Total == 3)
     Assert(t, data.getWordProb("tall") == float64(1)/float64(3), "tall")
     Assert(t, data.getWordProb("rich") == float64(1)/float64(3), "rich")
+}
+
+func TestGobs(t *testing.T) {
+    c := NewClassifier(Good, Bad)
+    c.Learn([]string{"tall", "handsome", "rich"}, Good)
+    err := c.WriteToFile("test.ser")
+    Assert(t, err == nil, "could not write:", err)
+    d, err := NewClassifierFromFile("test.ser")
+    Assert(t, err == nil, "could not read:", err)
+    fmt.Printf("%v\n", d)
+    data := d.datas[Good]
+    Assert(t, data.Total == 3)
+    Assert(t, data.getWordProb("tall") == float64(1)/float64(3), "tall")
+    Assert(t, data.getWordProb("rich") == float64(1)/float64(3), "rich")
+    // remove the file
+    err = os.Remove("test.ser")
+    Assert(t, err == nil, "could not remove test file:", err)
 }
 
 func TestFreqMatrixConstruction(t *testing.T) {

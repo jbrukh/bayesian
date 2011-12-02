@@ -52,7 +52,11 @@
 //
 package bayesian
 
-import "math"
+import (
+    "math"
+    "gob"
+    "os"
+)
 
 // defaultProb is the tiny non-zero probability that a word
 // we have not seen before appears in the class. 
@@ -75,30 +79,38 @@ type Classifier struct {
     datas map[Class]*classData
 }
 
+// serializableClassifier represents an container for
+// classifier objects whose fields are modifiable by
+// reflection and are therefore writeable.
+type serializableClassifier struct {
+    Classes []Class
+    Datas map[Class]*classData
+}
+
 // classData holds the frequency data for words in a
 // particular class. In the future, we may replace this
 // structure with a trie-like structure for more
 // efficient storage.
 type classData struct {
-    freqs map[string]int
-    total int
+    Freqs map[string]int
+    Total int
 }
 
 // newClassData creates a new empty class data node.
 func newClassData() *classData {
     return &classData{
-        freqs: make(map[string]int),
+        Freqs: make(map[string]int),
     }
 }
 
 // P(W|Cj) -- the probability of seeing a particular word
 // in a document of this class.
 func (d *classData) getWordProb(word string) float64 {
-    value, ok := d.freqs[word]
+    value, ok := d.Freqs[word]
     if !ok {
         return defaultProb
     }
-    return float64(value)/float64(d.total)
+    return float64(value)/float64(d.Total)
 }
 
 // P(D|C_j) -- the probability of seeing this set of words
@@ -131,6 +143,18 @@ func NewClassifier(classes ...Class) (inst *Classifier) {
     return
 }
 
+func NewClassifierFromFile(name string) (c *Classifier, err os.Error) {
+    file, err := os.Open(name)
+    if err != nil {
+        return nil, err
+    }
+    dec := gob.NewDecoder(file)
+    w := new(serializableClassifier)
+    err = dec.Decode(w)
+
+    return &Classifier{w.Classes, w.Datas}, err
+}
+
 // getPriors returns the prior probabilities for the
 // classes provided -- P(C_i). There is a way to
 // smooth priors, currently not implemented here.
@@ -139,7 +163,7 @@ func (c *Classifier) getPriors() (priors []float64) {
     priors = make([]float64, n, n)
     sum := 0
     for index, class := range c.Classes {
-        total := c.datas[class].total;
+        total := c.datas[class].Total;
         priors[index] = float64(total)
         sum += total
     }
@@ -155,8 +179,8 @@ func (c *Classifier) getPriors() (priors []float64) {
 func (c *Classifier) Learn(words []string, which Class) {
     data := c.datas[which]
     for _, word := range words {
-        data.freqs[word]++
-        data.total++
+        data.Freqs[word]++
+        data.Total++
     }
 }
 
@@ -245,6 +269,17 @@ func (c *Classifier) WordFrequencies(words []string) (freqMatrix [][]float64) {
         }
         freqMatrix[i] = arr
     }
+    return
+}
+
+// Serialize this classifier to a file.
+func (c *Classifier) WriteToFile(name string) (err os.Error) {
+    file, err := os.OpenFile(name, os.O_WRONLY | os.O_CREATE, 0655)
+    if err != nil {
+        return err
+    }
+    enc := gob.NewEncoder(file)
+    err = enc.Encode(&serializableClassifier{c.Classes, c.datas})
     return
 }
 
