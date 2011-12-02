@@ -32,6 +32,14 @@ See the GoPkgDoc documentation [here](http://gopkgdoc.appspot.com/pkg/github.com
 
 ------------
 
+### Features
+
+- Conditional probability and "log-likelihood"-like scoring.
+- Underflow detection.
+- Simple persistence of classifiers.
+- Statistics.
+
+------------
 ### Example
 
 To use the classifier, first you must create some classes
@@ -61,7 +69,7 @@ Magnitude of the score indicates likelihood. Alternatively (but
 with some risk of float underflow), you can obtain actual probabilities:
 
 
-    probs, likely, _ := classifier.Probabilities(
+    probs, likely, _ := classifier.ProbScores(
                             []string{"tall", "girl"}
                          )
 
