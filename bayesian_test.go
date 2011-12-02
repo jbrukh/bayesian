@@ -33,6 +33,17 @@ func TestNoClasses(t *testing.T) {
     Assert(t, false, "should have panicked:", c)
 }
 
+
+func TestNotUnique(t *testing.T) {
+    defer func() {
+        if err := recover(); err != nil {
+            // we are good
+        }
+    }()
+    c := NewClassifier("Good", "Good", "Bad", "Cow")
+    Assert(t, false, "should have panicked:", c)
+}
+
 func TestOneClass(t *testing.T) {
     defer func() {
         if err := recover(); err != nil {
@@ -91,7 +102,7 @@ func TestProbabilities(t *testing.T) {
     Assert(t, strict == false, "not strict")
 }
 
-func TestWordProbs(t *testing.T) {
+func TestLogScores(t *testing.T) {
     c := NewClassifier(Good, Bad)
     c.Learn([]string{"tall", "handsome", "rich"}, Good)
     data := c.datas[Good]
