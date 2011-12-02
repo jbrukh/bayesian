@@ -143,6 +143,9 @@ func NewClassifier(classes ...Class) (inst *Classifier) {
     return
 }
 
+// NewClassifierFromFile loads an existing classifier from
+// disk. The classifier was previously saved with a call
+// to WriteToFile().
 func NewClassifierFromFile(name string) (c *Classifier, err os.Error) {
     file, err := os.Open(name)
     if err != nil {
