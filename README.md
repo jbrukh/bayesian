@@ -28,7 +28,7 @@ To test, use:
 
 ### Documentation
 
-See the GoPkgDoc documentation [here][http://gopkgdoc.appspot.com/pkg/github.com/jbrukh/bayesian].
+See the GoPkgDoc documentation [here](http://gopkgdoc.appspot.com/pkg/github.com/jbrukh/bayesian).
 
 ------------
 
