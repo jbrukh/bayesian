@@ -1,16 +1,15 @@
 /*
  A Naive Bayesian Classifier
  Jake Brukhman <jbrukh@gmail.com>
-
  
  BAYESIAN CLASSIFICATION REFRESHER: suppose you have a set
- of classes (e.g. categories) `C := {C_1, ..., C_n}`, and a
+ of classes (e.g. categories) C := {C_1, ..., C_n}, and a
  document D consisting of words D := {W_1, ..., W_k}.
  We wish to ascertain the probability that the document
  belongs to some class C_j given some set of training data
  associating documents and classes.
 
- By Bayes Theorem, we have that
+ By Bayes' Theorem, we have that
 
     P(C_j|D) = P(D|C_j)*P(C_j)/P(D).
 
@@ -63,7 +62,7 @@ import (
 // we have not seen before appears in the class. 
 const defaultProb = 0.00000000001
 
-// This type defines a set of classes that the classifier will
+// Class defines a set of classes that the classifier will
 // filter: C = {C_1, ..., C_n}. You should define your classes
 // as a set of constants, for example as follows:
 //
@@ -72,6 +71,7 @@ const defaultProb = 0.00000000001
 //        Bad Class = "Bad
 //    )
 //
+// Class values should be unique.
 type Class string
 
 // Classifier implements the Naive Bayesian Classifier.
@@ -80,9 +80,9 @@ type Classifier struct {
     datas map[Class]*classData
 }
 
-// serializableClassifier represents an container for
-// classifier objects whose fields are modifiable by
-// reflection and are therefore writeable.
+// serializableClassifier represents a container for
+// Classifier objects whose fields are modifiable by
+// reflection and are therefore writeable by gob.
 type serializableClassifier struct {
     Classes []Class
     Datas map[Class]*classData
@@ -97,15 +97,15 @@ type classData struct {
     Total int
 }
 
-// newClassData creates a new empty class data node.
+// newClassData creates a new empty classData node.
 func newClassData() *classData {
     return &classData{
         Freqs: make(map[string]int),
     }
 }
 
-// P(W|Cj) -- the probability of seeing a particular word
-// in a document of this class.
+// getWordProb returns P(W|C_j) -- the probability of seeing
+// a particular word W in a document of this class.
 func (d *classData) getWordProb(word string) float64 {
     value, ok := d.Freqs[word]
     if !ok {
@@ -114,8 +114,8 @@ func (d *classData) getWordProb(word string) float64 {
     return float64(value)/float64(d.Total)
 }
 
-// P(D|C_j) -- the probability of seeing this set of words
-// in a document of this class.
+// getWordsProb returns P(D|C_j) -- the probability of seeing
+// this set of words in a document of this class.
 //
 // Note that words should not be empty, and this method of
 // calulation is prone to underflow if there are many words
@@ -128,25 +128,39 @@ func (d *classData) getWordsProb(words []string) (prob float64) {
     return
 }
 
-// New creates a new Classifier. The classes the provided
-// should be at least 2 in number and unique from each other.
-func NewClassifier(classes ...Class) (inst *Classifier) {
-    if len(classes) < 2 {
+// NewClassifier returns a new classifier. The classes the provided
+// should be at least 2 in number and unique, or this method will
+// panic.
+func NewClassifier(classes ...Class) (c *Classifier) {
+    n := len(classes)
+
+    // check size
+    if n < 2 {
         panic("provide at least two classes")
     }
-    inst = &Classifier{
+
+    // check uniqueness
+    check := make(map[Class]bool, n)
+    for _, class := range classes {
+        check[class] = true
+    }
+    if len(check) != n {
+        panic("classes must be unique")
+    }
+    // create the classifier
+    c = &Classifier{
             classes,
-            make(map[Class]*classData),
+            make(map[Class]*classData, n),
     }
     for _, class := range classes {
-        inst.datas[class] = newClassData()
+        c.datas[class] = newClassData()
     }
     return
 }
 
 // NewClassifierFromFile loads an existing classifier from
-// disk. The classifier was previously saved with a call
-// to WriteToFile().
+// file. The classifier was previously saved with a call
+// to c.WriteToFile(string).
 func NewClassifierFromFile(name string) (c *Classifier, err os.Error) {
     file, err := os.Open(name)
     if err != nil {
@@ -160,8 +174,10 @@ func NewClassifierFromFile(name string) (c *Classifier, err os.Error) {
 }
 
 // getPriors returns the prior probabilities for the
-// classes provided -- P(C_i). There is a way to
-// smooth priors, currently not implemented here.
+// classes provided -- P(C_j).
+// 
+// TODO: There is a way to smooth priors, currently 
+// not implemented here.
 func (c *Classifier) getPriors() (priors []float64) {
     n := len(c.Classes)
     priors = make([]float64, n, n)
@@ -179,34 +195,36 @@ func (c *Classifier) getPriors() (priors []float64) {
     return
 }
 
-// Learn will train the classifier on the provided data.
-func (c *Classifier) Learn(words []string, which Class) {
+// Learn will accept new training documents for
+// supervised learning.
+func (c *Classifier) Learn(document []string, which Class) {
     data := c.datas[which]
-    for _, word := range words {
+    for _, word := range document {
         data.Freqs[word]++
         data.Total++
     }
 }
 
-// Scores will produce an array of scores that correspond
-// to its opinion on the document in question, and whether it
-// belongs to the given class. The order of the scores
-// in the return values follows the order of the inital array
-// of Class objects parameterized to the NewClassifier() function.
-// If no training data has been provided, c will return
-// a 0 array.
+// LogScores produces "log-likelihood"-like scores that can
+// be used to classify documents into classes.
 //
 // The value of the score is proportional to the likelihood,
-// even if the score is negative, so that the score with the
-// greatest value corresponds to the most likely class.
+// as determined by the classifier, that the given document
+// belongs to the given class. This is true even when scores
+// returned are negative, which they will be (since we are
+// taking logs of probabilities).
 //
-// Additionally, c function will return the index of the 
-// maximum probability. The value of c number is given by
-// scores[inx]. The class of that corresponds to c number
-// is classifier.Classes[inx]. If more than one of the
-// returned probabilities has the maximum values, then
+// The index j of the score corresponds to the class given
+// by c.Classes[j].
+//
+// Additionally returned are "inx" and "strict" values. The
+// inx corresponds to the maximum score in the array. If more
+// than one of the scores holds the maximum values, then
 // strict is false.
-func (c *Classifier) LogScores(words []string) (scores []float64, inx int, strict bool) {
+//
+// Unlike c.Probabilities(), this function is not prone to
+// floating point underflow and is relatively safe to use.
+func (c *Classifier) LogScores(document []string) (scores []float64, inx int, strict bool) {
     n := len(c.Classes)
     scores = make([]float64, n, n)
     priors := c.getPriors()
@@ -217,7 +235,7 @@ func (c *Classifier) LogScores(words []string) (scores []float64, inx int, stric
         // c is the sum of the logarithms 
         // as outlined in the refresher
         score := math.Log(priors[index])
-        for _, word := range words {
+        for _, word := range document {
             score += math.Log(data.getWordProb(word))
         }
         scores[index] = score
@@ -229,7 +247,7 @@ func (c *Classifier) LogScores(words []string) (scores []float64, inx int, stric
 // Probabilities works the same as Score, but delivers
 // actual probabilities as discussed above. Note that float64
 // underflow is possible if the word list contains too
-// many doc that have probabilities very close to 0.
+// many words that have probabilities very close to 0.
 func (c *Classifier) Probabilities(doc []string) (scores []float64, inx int, strict bool) {
     n := len(c.Classes)
     scores = make([]float64, n, n)
@@ -258,7 +276,7 @@ func (c *Classifier) Probabilities(doc []string) (scores []float64, inx int, str
 // exist in the classifier for each class state for the given input
 // words. In other words, if you obtain the frequencies
 //
-//    freqs := c.WordFrequencies(/* ... array of j words ... */)
+//    freqs := c.WordFrequencies(/* [j]string */)
 //
 // then the expression freq[i][j] represents the frequency of the j-th
 // word within the i-th class.
@@ -288,7 +306,7 @@ func (c *Classifier) WriteToFile(name string) (err os.Error) {
 }
 
 // Seen returns the number of words seen for
-// each class.
+// each class, in the lifetime of the classifier.
 func (c *Classifier) Seen() (result []int) {
     result = make([]int, len(c.Classes))
     for inx, class := range c.Classes {
