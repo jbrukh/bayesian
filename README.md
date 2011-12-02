@@ -1,4 +1,4 @@
-### Naive Bayesian Classification
+## Naive Bayesian Classification
 
 Perform naive Bayesian classification into an arbitrary number of classes on sets of strings.
 
@@ -8,13 +8,13 @@ license.
 
 ------------
 
-#### Background
+### Background
 
 See code comments for a refresher on naive Bayesian classifiers.
 
 ------------
 
-#### Installation
+### Installation
 
 To install, simply:
 
@@ -26,7 +26,13 @@ To test, use:
 
 ------------
 
-#### Example
+### Documentation
+
+See the GoPkgDoc documentation [here][http://gopkgdoc.appspot.com/pkg/github.com/jbrukh/bayesian].
+
+------------
+
+### Example
 
 To use the classifier, first you must create some classes
 and train it:
