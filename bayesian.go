@@ -205,7 +205,7 @@ func (c *Classifier) Learn(words []string, which Class) {
 // is classifier.Classes[inx]. If more than one of the
 // returned probabilities has the maximum values, then
 // strict is false.
-func (c *Classifier) Scores(words []string) (scores []float64, inx int, strict bool) {
+func (c *Classifier) LogScores(words []string) (scores []float64, inx int, strict bool) {
     n := len(c.Classes)
     scores = make([]float64, n, n)
     priors := c.getPriors()

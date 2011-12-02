@@ -47,7 +47,7 @@ and train it:
 Then you can ascertain the scores of each class and
 the most likely class your data belongs to:
 
-    scores, likely, _ := classifier.Score(
+    scores, likely, _ := classifier.LogScores(
                             []string{"tall", "girl"}
                          )
 
