@@ -310,9 +310,13 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 
 
 // SafeProbScores works the same as ProbScores, but is
-// able to detect underflow. If an underflow is detected,
+// able to detect underflow in those cases where underflow
+// results in the reverse classification. If an underflow is detected,
 // this method panics, allowing the user to recover as
-// necessary.
+// necessary. Note that underflow, under certain rare circumstances,
+// may still result in incorrect probabilities being returned,
+// but this method guarantees that all panic-less invokations
+// are properly classified.
 //
 // Underflow detection is more costly because it also
 // has to make additional log score calculations.
