@@ -24,6 +24,8 @@ To test, use:
 
     $ make test
 
+This, of course, assumes you have properly installed Go (tested with release.r60.3).
+
 ------------
 
 ### Documentation

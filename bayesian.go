@@ -48,7 +48,8 @@
 
  where i = 1, ..., k. Note that by doing this, we are discarding
  the scaling factor P(D) and our scores are no longer
- probabilities.
+ probabilities; however, the monotonic relationship of the
+ scores is preserved by the log function.
 */
 package bayesian
 
