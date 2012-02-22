@@ -16,15 +16,10 @@ See code comments for a refresher on naive Bayesian classifiers.
 
 ### Installation
 
-To install, simply:
+Using the go command:
 
-    $ make install
-
-To test, use:
-
-    $ make test
-
-This, of course, assumes you have properly installed Go (tested with release.r60.3).
+    $ go get github.com/jbrukh/bayesian
+    $ go install !$
 
 ------------
 

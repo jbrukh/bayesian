@@ -1,7 +1,7 @@
 /*
  A Naive Bayesian Classifier
  Jake Brukhman <jbrukh@gmail.com>
- 
+
  BAYESIAN CLASSIFICATION REFRESHER: suppose you have a set
  of classes (e.g. categories) C := {C_1, ..., C_n}, and a
  document D consisting of words D := {W_1, ..., W_k}.
@@ -54,9 +54,9 @@
 package bayesian
 
 import (
-    "math"
-    "gob"
-    "os"
+	"encoding/gob"
+	"math"
+	"os"
 )
 
 // defaultProb is the tiny non-zero probability that a word
@@ -77,20 +77,20 @@ type Class string
 
 // Classifier implements the Naive Bayesian Classifier.
 type Classifier struct {
-    Classes []Class
-    learned int             // docs learned
-    seen int                // docs seen
-    datas map[Class]*classData
+	Classes []Class
+	learned int // docs learned
+	seen    int // docs seen
+	datas   map[Class]*classData
 }
 
 // serializableClassifier represents a container for
 // Classifier objects whose fields are modifiable by
 // reflection and are therefore writeable by gob.
 type serializableClassifier struct {
-    Classes []Class
-    Learned int
-    Seen int
-    Datas map[Class]*classData
+	Classes []Class
+	Learned int
+	Seen    int
+	Datas   map[Class]*classData
 }
 
 // classData holds the frequency data for words in a
@@ -98,25 +98,25 @@ type serializableClassifier struct {
 // structure with a trie-like structure for more
 // efficient storage.
 type classData struct {
-    Freqs map[string]int
-    Total int
+	Freqs map[string]int
+	Total int
 }
 
 // newClassData creates a new empty classData node.
 func newClassData() *classData {
-    return &classData{
-        Freqs: make(map[string]int),
-    }
+	return &classData{
+		Freqs: make(map[string]int),
+	}
 }
 
 // getWordProb returns P(W|C_j) -- the probability of seeing
 // a particular word W in a document of this class.
 func (d *classData) getWordProb(word string) float64 {
-    value, ok := d.Freqs[word]
-    if !ok {
-        return defaultProb
-    }
-    return float64(value)/float64(d.Total)
+	value, ok := d.Freqs[word]
+	if !ok {
+		return defaultProb
+	}
+	return float64(value) / float64(d.Total)
 }
 
 // getWordsProb returns P(D|C_j) -- the probability of seeing
@@ -126,56 +126,56 @@ func (d *classData) getWordProb(word string) float64 {
 // calulation is prone to underflow if there are many words
 // and their individual probabilties are small.
 func (d *classData) getWordsProb(words []string) (prob float64) {
-    prob = 1
-    for _, word := range words {
-        prob *= d.getWordProb(word)
-    }
-    return
+	prob = 1
+	for _, word := range words {
+		prob *= d.getWordProb(word)
+	}
+	return
 }
 
 // NewClassifier returns a new classifier. The classes the provided
 // should be at least 2 in number and unique, or this method will
 // panic.
 func NewClassifier(classes ...Class) (c *Classifier) {
-    n := len(classes)
+	n := len(classes)
 
-    // check size
-    if n < 2 {
-        panic("provide at least two classes")
-    }
+	// check size
+	if n < 2 {
+		panic("provide at least two classes")
+	}
 
-    // check uniqueness
-    check := make(map[Class]bool, n)
-    for _, class := range classes {
-        check[class] = true
-    }
-    if len(check) != n {
-        panic("classes must be unique")
-    }
-    // create the classifier
-    c = &Classifier{
-            Classes: classes,
-            datas: make(map[Class]*classData, n),
-    }
-    for _, class := range classes {
-        c.datas[class] = newClassData()
-    }
-    return
+	// check uniqueness
+	check := make(map[Class]bool, n)
+	for _, class := range classes {
+		check[class] = true
+	}
+	if len(check) != n {
+		panic("classes must be unique")
+	}
+	// create the classifier
+	c = &Classifier{
+		Classes: classes,
+		datas:   make(map[Class]*classData, n),
+	}
+	for _, class := range classes {
+		c.datas[class] = newClassData()
+	}
+	return
 }
 
 // NewClassifierFromFile loads an existing classifier from
 // file. The classifier was previously saved with a call
 // to c.WriteToFile(string).
-func NewClassifierFromFile(name string) (c *Classifier, err os.Error) {
-    file, err := os.Open(name)
-    if err != nil {
-        return nil, err
-    }
-    dec := gob.NewDecoder(file)
-    w := new(serializableClassifier)
-    err = dec.Decode(w)
+func NewClassifierFromFile(name string) (c *Classifier, err error) {
+	file, err := os.Open(name)
+	if err != nil {
+		return nil, err
+	}
+	dec := gob.NewDecoder(file)
+	w := new(serializableClassifier)
+	err = dec.Decode(w)
 
-    return &Classifier{w.Classes, w.Learned, w.Seen, w.Datas}, err
+	return &Classifier{w.Classes, w.Learned, w.Seen, w.Datas}, err
 }
 
 // getPriors returns the prior probabilities for the
@@ -184,54 +184,54 @@ func NewClassifierFromFile(name string) (c *Classifier, err os.Error) {
 // TODO: There is a way to smooth priors, currently 
 // not implemented here.
 func (c *Classifier) getPriors() (priors []float64) {
-    n := len(c.Classes)
-    priors = make([]float64, n, n)
-    sum := 0
-    for index, class := range c.Classes {
-        total := c.datas[class].Total;
-        priors[index] = float64(total)
-        sum += total
-    }
-    if sum != 0 {
-        for i := 0; i < n; i++ {
-            priors[i] /= float64(sum)
-        }
-    }
-    return
+	n := len(c.Classes)
+	priors = make([]float64, n, n)
+	sum := 0
+	for index, class := range c.Classes {
+		total := c.datas[class].Total
+		priors[index] = float64(total)
+		sum += total
+	}
+	if sum != 0 {
+		for i := 0; i < n; i++ {
+			priors[i] /= float64(sum)
+		}
+	}
+	return
 }
 
 // Learned returns the number of documents ever learned
 // in the lifetime of this classifier.
 func (c *Classifier) Learned() int {
-    return c.learned
+	return c.learned
 }
 
 // Seen returns the number of documents ever classified
 // in the lifetime of this classifier.
 func (c *Classifier) Seen() int {
-    return c.seen
+	return c.seen
 }
 
 // WordCount returns the number of words counted for
 // each class in the lifetime of the classifier.
 func (c *Classifier) WordCount() (result []int) {
-    result = make([]int, len(c.Classes))
-    for inx, class := range c.Classes {
-        data := c.datas[class]
-        result[inx] = data.Total
-    }
-    return
+	result = make([]int, len(c.Classes))
+	for inx, class := range c.Classes {
+		data := c.datas[class]
+		result[inx] = data.Total
+	}
+	return
 }
 
 // Learn will accept new training documents for
 // supervised learning.
 func (c *Classifier) Learn(document []string, which Class) {
-    data := c.datas[which]
-    for _, word := range document {
-        data.Freqs[word]++
-        data.Total++
-    }
-    c.learned++
+	data := c.datas[which]
+	for _, word := range document {
+		data.Freqs[word]++
+		data.Total++
+	}
+	c.learned++
 }
 
 // LogScores produces "log-likelihood"-like scores that can
@@ -254,24 +254,24 @@ func (c *Classifier) Learn(document []string, which Class) {
 // Unlike c.Probabilities(), this function is not prone to
 // floating point underflow and is relatively safe to use.
 func (c *Classifier) LogScores(document []string) (scores []float64, inx int, strict bool) {
-    n := len(c.Classes)
-    scores = make([]float64, n, n)
-    priors := c.getPriors()
+	n := len(c.Classes)
+	scores = make([]float64, n, n)
+	priors := c.getPriors()
 
-    // calculate the score for each class
-    for index, class := range c.Classes {
-        data := c.datas[class]
-        // c is the sum of the logarithms 
-        // as outlined in the refresher
-        score := math.Log(priors[index])
-        for _, word := range document {
-            score += math.Log(data.getWordProb(word))
-        }
-        scores[index] = score
-    }
-    inx, strict = findMax(scores)
-    c.seen++
-    return scores, inx, strict
+	// calculate the score for each class
+	for index, class := range c.Classes {
+		data := c.datas[class]
+		// c is the sum of the logarithms 
+		// as outlined in the refresher
+		score := math.Log(priors[index])
+		for _, word := range document {
+			score += math.Log(data.getWordProb(word))
+		}
+		scores[index] = score
+	}
+	inx, strict = findMax(scores)
+	c.seen++
+	return scores, inx, strict
 }
 
 // ProbScores works the same as LogScores, but delivers
@@ -285,30 +285,29 @@ func (c *Classifier) LogScores(document []string) (scores []float64, inx int, st
 // may or may not be a concern. Consider using SafeProbScores()
 // instead.
 func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict bool) {
-    n := len(c.Classes)
-    scores = make([]float64, n, n)
-    priors := c.getPriors()
-    sum := float64(0)
-    // calculate the score for each class
-    for index, class := range c.Classes {
-        data := c.datas[class]
-        // c is the sum of the logarithms 
-        // as outlined in the refresher
-        score := priors[index]
-        for _, word := range doc {
-            score *= data.getWordProb(word)
-        }
-        scores[index] = score
-        sum += score
-    }
-    for i := 0; i < n; i++ {
-        scores[i] /= sum
-    }
-    inx, strict = findMax(scores)
-    c.seen++
-    return scores, inx, strict
+	n := len(c.Classes)
+	scores = make([]float64, n, n)
+	priors := c.getPriors()
+	sum := float64(0)
+	// calculate the score for each class
+	for index, class := range c.Classes {
+		data := c.datas[class]
+		// c is the sum of the logarithms 
+		// as outlined in the refresher
+		score := priors[index]
+		for _, word := range doc {
+			score *= data.getWordProb(word)
+		}
+		scores[index] = score
+		sum += score
+	}
+	for i := 0; i < n; i++ {
+		scores[i] /= sum
+	}
+	inx, strict = findMax(scores)
+	c.seen++
+	return scores, inx, strict
 }
-
 
 // SafeProbScores works the same as ProbScores, but is
 // able to detect underflow in those cases where underflow
@@ -322,43 +321,42 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 // Underflow detection is more costly because it also
 // has to make additional log score calculations.
 func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool) {
-    n := len(c.Classes)
-    scores = make([]float64, n, n)
-    logScores := make([]float64, n, n)
-    priors := c.getPriors()
-    sum := float64(0)
-    // calculate the score for each class
-    for index, class := range c.Classes {
-        data := c.datas[class]
-        // c is the sum of the logarithms 
-        // as outlined in the refresher
-        score := priors[index]
-        logScore := math.Log(priors[index])
-        for _, word := range doc {
-            p := data.getWordProb(word)
-            score *= p
-            logScore += math.Log(p)
-        }
-        scores[index] = score
-        logScores[index] = logScore
-        sum += score
-    }
-    for i := 0; i < n; i++ {
-        scores[i] /= sum
-    }
-    inx, strict = findMax(scores)
-    logInx, logStrict := findMax(logScores)
+	n := len(c.Classes)
+	scores = make([]float64, n, n)
+	logScores := make([]float64, n, n)
+	priors := c.getPriors()
+	sum := float64(0)
+	// calculate the score for each class
+	for index, class := range c.Classes {
+		data := c.datas[class]
+		// c is the sum of the logarithms 
+		// as outlined in the refresher
+		score := priors[index]
+		logScore := math.Log(priors[index])
+		for _, word := range doc {
+			p := data.getWordProb(word)
+			score *= p
+			logScore += math.Log(p)
+		}
+		scores[index] = score
+		logScores[index] = logScore
+		sum += score
+	}
+	for i := 0; i < n; i++ {
+		scores[i] /= sum
+	}
+	inx, strict = findMax(scores)
+	logInx, logStrict := findMax(logScores)
 
-    // detect underflow -- the size
-    // relation between scores and logScores
-    // must be preserved or something is wrong
-    if inx != logInx || strict != logStrict {
-        panic("possible underflow detected")
-    }
-    c.seen++
-    return scores, inx, strict
+	// detect underflow -- the size
+	// relation between scores and logScores
+	// must be preserved or something is wrong
+	if inx != logInx || strict != logStrict {
+		panic("possible underflow detected")
+	}
+	c.seen++
+	return scores, inx, strict
 }
-
 
 // WordFrequencies returns a matrix of word frequencies that currently
 // exist in the classifier for each class state for the given input
@@ -369,45 +367,44 @@ func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, st
 // then the expression freq[i][j] represents the frequency of the j-th
 // word within the i-th class.
 func (c *Classifier) WordFrequencies(words []string) (freqMatrix [][]float64) {
-    n, l := len(c.Classes), len(words)
-    freqMatrix = make([][]float64, n)
-    for i, _ := range freqMatrix {
-        arr := make([]float64, l)
-        data := c.datas[c.Classes[i]]
-        for j, _ := range arr {
-            arr[j] = data.getWordProb(words[j])
-        }
-        freqMatrix[i] = arr
-    }
-    return
+	n, l := len(c.Classes), len(words)
+	freqMatrix = make([][]float64, n)
+	for i, _ := range freqMatrix {
+		arr := make([]float64, l)
+		data := c.datas[c.Classes[i]]
+		for j, _ := range arr {
+			arr[j] = data.getWordProb(words[j])
+		}
+		freqMatrix[i] = arr
+	}
+	return
 }
 
 // Serialize this classifier to a file.
-func (c *Classifier) WriteToFile(name string) (err os.Error) {
-    file, err := os.OpenFile(name, os.O_WRONLY | os.O_CREATE, 0655)
-    if err != nil {
-        return err
-    }
-    enc := gob.NewEncoder(file)
-    err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas})
-    return
+func (c *Classifier) WriteToFile(name string) (err error) {
+	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0655)
+	if err != nil {
+		return err
+	}
+	enc := gob.NewEncoder(file)
+	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas})
+	return
 }
-
 
 // findMax finds the maximum of a set of scores; if the
 // maximum is strict -- that is, it is the single unique
 // maximum from the set -- then strict has return value
 // true. Otherwise it is false.
 func findMax(scores []float64) (inx int, strict bool) {
-    inx = 0
-    strict = true
-    for i := 1; i < len(scores); i++ {
-        if scores[inx] < scores[i] {
-            inx = i
-            strict = true
-        } else if scores[inx] == scores[i] {
-            strict = false
-        }
-    }
-    return
+	inx = 0
+	strict = true
+	for i := 1; i < len(scores); i++ {
+		if scores[inx] < scores[i] {
+			inx = i
+			strict = true
+		} else if scores[inx] == scores[i] {
+			strict = false
+		}
+	}
+	return
 }
