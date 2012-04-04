@@ -382,7 +382,7 @@ func (c *Classifier) WordFrequencies(words []string) (freqMatrix [][]float64) {
 
 // Serialize this classifier to a file.
 func (c *Classifier) WriteToFile(name string) (err error) {
-	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0655)
+	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
