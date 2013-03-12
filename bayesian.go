@@ -55,6 +55,7 @@ package bayesian
 
 import (
 	"encoding/gob"
+	"io"
 	"math"
 	"os"
 )
@@ -171,7 +172,12 @@ func NewClassifierFromFile(name string) (c *Classifier, err error) {
 	if err != nil {
 		return nil, err
 	}
-	dec := gob.NewDecoder(file)
+	return NewClassifierFromReader(file)
+}
+
+//This actually does the deserializing of a Gob encoded classifier
+func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
+	dec := gob.NewDecoder(r)
 	w := new(serializableClassifier)
 	err = dec.Decode(w)
 
@@ -386,7 +392,12 @@ func (c *Classifier) WriteToFile(name string) (err error) {
 	if err != nil {
 		return err
 	}
-	enc := gob.NewEncoder(file)
+	return c.WriteTo(file)
+}
+
+//Serialize this classifier to GOB and write to Writer
+func (c *Classifier) WriteTo(w io.Writer) (err error) {
+	enc := gob.NewEncoder(w)
 	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas})
 	return
 }
