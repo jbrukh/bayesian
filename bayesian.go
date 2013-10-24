@@ -397,13 +397,14 @@ func (c *Classifier) WriteToFile(name string) (err error) {
 
 // WriteClassesToFile writes all classes to files.
 func (c *Classifier) WriteClassesToFile(rootPath string) (err error){
-	for name,class := range c.datas {
-		c.WriteClassToFile(name, class, rootPath)
+	for name,_ := range c.datas {
+		c.WriteClassToFile(name, rootPath)
 	}
 	return
 }
 
-func (c *Classifier) WriteClassToFile(name Class, data *classData, rootPath string) (err error) {
+func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
+	data := c.datas[name]
 	fileName := rootPath + "/" + string(name)
 	file, err := os.OpenFile(fileName, os.O_WRONLY| os.O_CREATE, 0644)
 	if err != nil {
