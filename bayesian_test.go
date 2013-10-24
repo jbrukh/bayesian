@@ -206,6 +206,7 @@ func TestClassByFile(t *testing.T){
 	err = os.Remove("good")
 	Assert(t, err == nil, "could not remove test file:", err)
 	err = os.Remove("bad")
+	Assert(t, err == nil, "could not remove test file:", err)
 }
 
 func TestFreqMatrixConstruction(t *testing.T) {

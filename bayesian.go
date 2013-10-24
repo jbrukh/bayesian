@@ -395,18 +395,23 @@ func (c *Classifier) WriteToFile(name string) (err error) {
 	return c.WriteTo(file)
 }
 
-// WriteClassToFile writes a class per file.
-func (c *Classifier) WriteClassesToFile(location string) (err error){
+// WriteClassesToFile writes all classes to files.
+func (c *Classifier) WriteClassesToFile(rootPath string) (err error){
 	for name,class := range c.datas {
-		fileName := location + "/" + string(name)
-		file, err := os.OpenFile(fileName, os.O_WRONLY| os.O_CREATE, 0644)
-		if err != nil {
-			return err
-		}
-		enc := gob.NewEncoder(file)
-		err = enc.Encode(class)
+		c.WriteClassToFile(name, class, rootPath)
 	}
-	return err
+	return
+}
+
+func (c *Classifier) WriteClassToFile(name Class, data *classData, rootPath string) (err error) {
+	fileName := rootPath + "/" + string(name)
+	file, err := os.OpenFile(fileName, os.O_WRONLY| os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	enc := gob.NewEncoder(file)
+	err = enc.Encode(data)
+	return
 }
 
 //Serialize this classifier to GOB and write to Writer
@@ -434,7 +439,6 @@ func (c *Classifier) ReadClassFromFile(class Class, location string) (err error)
 	c.datas[class] = w
 	return
 }
-
 
 // findMax finds the maximum of a set of scores; if the
 // maximum is strict -- that is, it is the single unique
