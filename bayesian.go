@@ -395,10 +395,49 @@ func (c *Classifier) WriteToFile(name string) (err error) {
 	return c.WriteTo(file)
 }
 
+// WriteClassesToFile writes all classes to files.
+func (c *Classifier) WriteClassesToFile(rootPath string) (err error){
+	for name,_ := range c.datas {
+		c.WriteClassToFile(name, rootPath)
+	}
+	return
+}
+
+func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
+	data := c.datas[name]
+	fileName := rootPath + "/" + string(name)
+	file, err := os.OpenFile(fileName, os.O_WRONLY| os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+	enc := gob.NewEncoder(file)
+	err = enc.Encode(data)
+	return
+}
+
 //Serialize this classifier to GOB and write to Writer
 func (c *Classifier) WriteTo(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
 	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas})
+	return
+}
+
+// ReadClassFromFile load an existing classData from
+// file.
+func (c *Classifier) ReadClassFromFile(class Class, location string) (err error){
+	fileName := location + "/" + string(class)
+	file, err := os.Open(fileName)
+
+	if err != nil {
+		return err
+	}
+
+	dec := gob.NewDecoder(file)
+	w := new(classData)
+	err = dec.Decode(w)
+
+	c.learned++
+	c.datas[class] = w
 	return
 }
 
