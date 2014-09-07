@@ -58,6 +58,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"errors"
 )
 
 // defaultProb is the tiny non-zero probability that a word
@@ -326,12 +327,12 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 //
 // Underflow detection is more costly because it also
 // has to make additional log score calculations.
-func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool) {
+func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool, err error) {
 	n := len(c.Classes)
 	scores = make([]float64, n, n)
 	logScores := make([]float64, n, n)
 	priors := c.getPriors()
-	sum := float64(0)
+	sum := float64(0) 
 	// calculate the score for each class
 	for index, class := range c.Classes {
 		data := c.datas[class]
@@ -358,10 +359,10 @@ func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, st
 	// relation between scores and logScores
 	// must be preserved or something is wrong
 	if inx != logInx || strict != logStrict {
-		panic("possible underflow detected")
+		err = errors.New("possible underflow detected")
 	}
 	c.seen++
-	return scores, inx, strict
+	return scores, inx, strict, err
 }
 
 // WordFrequencies returns a matrix of word frequencies that currently
