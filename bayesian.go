@@ -23,13 +23,13 @@
  probability that a document belongs to C_j in general, without
  seeing the document first. P(D|C_j) is the probability of seeing
  such a document, given that it belongs to C_j. Here, by assuming
- that words appear independently in documents (this being the 
+ that words appear independently in documents (this being the
  "naive" assumption), we can estimate
 
     P(D|C_j) ~= P(W_1|C_j)*...*P(W_k|C_j)
 
  where P(W_i|C_j) is the probability of seeing the given word
- in a document of the given class. Finally, P(D) can be seen as 
+ in a document of the given class. Finally, P(D) can be seen as
  merely a scaling factor and is not strictly relevant to
  classificiation, unless you want to normalize the resulting
  scores and actually see probabilities. In this case, note that
@@ -55,14 +55,15 @@ package bayesian
 
 import (
 	"encoding/gob"
+	"errors"
 	"io"
 	"math"
 	"os"
-	"errors"
+	"path/filepath"
 )
 
 // defaultProb is the tiny non-zero probability that a word
-// we have not seen before appears in the class. 
+// we have not seen before appears in the class.
 const defaultProb = 0.00000000001
 
 // Class defines a set of classes that the classifier will
@@ -187,8 +188,8 @@ func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
 
 // getPriors returns the prior probabilities for the
 // classes provided -- P(C_j).
-// 
-// TODO: There is a way to smooth priors, currently 
+//
+// TODO: There is a way to smooth priors, currently
 // not implemented here.
 func (c *Classifier) getPriors() (priors []float64) {
 	n := len(c.Classes)
@@ -268,7 +269,7 @@ func (c *Classifier) LogScores(document []string) (scores []float64, inx int, st
 	// calculate the score for each class
 	for index, class := range c.Classes {
 		data := c.datas[class]
-		// c is the sum of the logarithms 
+		// c is the sum of the logarithms
 		// as outlined in the refresher
 		score := math.Log(priors[index])
 		for _, word := range document {
@@ -299,7 +300,7 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 	// calculate the score for each class
 	for index, class := range c.Classes {
 		data := c.datas[class]
-		// c is the sum of the logarithms 
+		// c is the sum of the logarithms
 		// as outlined in the refresher
 		score := priors[index]
 		for _, word := range doc {
@@ -332,11 +333,11 @@ func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, st
 	scores = make([]float64, n, n)
 	logScores := make([]float64, n, n)
 	priors := c.getPriors()
-	sum := float64(0) 
+	sum := float64(0)
 	// calculate the score for each class
 	for index, class := range c.Classes {
 		data := c.datas[class]
-		// c is the sum of the logarithms 
+		// c is the sum of the logarithms
 		// as outlined in the refresher
 		score := priors[index]
 		logScore := math.Log(priors[index])
@@ -397,8 +398,8 @@ func (c *Classifier) WriteToFile(name string) (err error) {
 }
 
 // WriteClassesToFile writes all classes to files.
-func (c *Classifier) WriteClassesToFile(rootPath string) (err error){
-	for name,_ := range c.datas {
+func (c *Classifier) WriteClassesToFile(rootPath string) (err error) {
+	for name, _ := range c.datas {
 		c.WriteClassToFile(name, rootPath)
 	}
 	return
@@ -406,8 +407,8 @@ func (c *Classifier) WriteClassesToFile(rootPath string) (err error){
 
 func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 	data := c.datas[name]
-	fileName := rootPath + "/" + string(name)
-	file, err := os.OpenFile(fileName, os.O_WRONLY| os.O_CREATE, 0644)
+	fileName := filepath.Join(rootPath, string(name))
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
@@ -425,8 +426,8 @@ func (c *Classifier) WriteTo(w io.Writer) (err error) {
 
 // ReadClassFromFile load an existing classData from
 // file.
-func (c *Classifier) ReadClassFromFile(class Class, location string) (err error){
-	fileName := location + "/" + string(class)
+func (c *Classifier) ReadClassFromFile(class Class, location string) (err error) {
+	fileName := filepath.Join(location, string(class))
 	file, err := os.Open(fileName)
 
 	if err != nil {
