@@ -388,6 +388,17 @@ func (c *Classifier) WordFrequencies(words []string) (freqMatrix [][]float64) {
 	return
 }
 
+// WordsByClass returns a map of words and thgeir probability of
+// appearing in the given class.
+func (c *Classifier) WordsByClass(class Class) (freqMap map[string]float64) {
+	freqMap = make(map[string]float64)
+	for word, cnt := range c.datas[class].Freqs {
+		freqMap[word] = float64(cnt) / float64(c.datas[class].Total)
+	}
+
+	return freqMap
+}
+
 // Serialize this classifier to a file.
 func (c *Classifier) WriteToFile(name string) (err error) {
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0644)
