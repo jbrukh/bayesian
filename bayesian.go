@@ -66,6 +66,7 @@ import (
 // we have not seen before appears in the class.
 const defaultProb = 0.00000000001
 
+// ErrUnderflow is returned when an underflow is detected
 var ErrUnderflow = errors.New("possible underflow detected")
 
 // Class defines a set of classes that the classifier will
