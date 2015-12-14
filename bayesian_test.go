@@ -129,11 +129,6 @@ func TestSeenLearned(t *testing.T) {
 }
 
 func TestInduceUnderflow(t *testing.T) {
-	defer func() {
-		if err := recover(); err != nil {
-			Assert(t, err.(string) == "possible underflow detected", "wrong panic?")
-		}
-	}()
 	c := NewClassifier(Good, Bad) // knows no words
 	const DOC_SIZE = 1000
 	document := make([]string, DOC_SIZE)
@@ -142,7 +137,8 @@ func TestInduceUnderflow(t *testing.T) {
 	}
 	// should induce overflow, because each word
 	// will have "defaultProb", which is small
-	scores, _, _, _ := c.SafeProbScores(document)
+	scores, _, _, err := c.SafeProbScores(document)
+	Assert(t, err == ErrUnderflow, "Underflow error not detected")
 	println(scores)
 }
 

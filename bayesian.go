@@ -66,6 +66,9 @@ import (
 // we have not seen before appears in the class.
 const defaultProb = 0.00000000001
 
+// ErrUnderflow is returned when an underflow is detected
+var ErrUnderflow = errors.New("possible underflow detected")
+
 // Class defines a set of classes that the classifier will
 // filter: C = {C_1, ..., C_n}. You should define your classes
 // as a set of constants, for example as follows:
@@ -320,10 +323,10 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 // SafeProbScores works the same as ProbScores, but is
 // able to detect underflow in those cases where underflow
 // results in the reverse classification. If an underflow is detected,
-// this method panics, allowing the user to recover as
+// this method returns an ErrUnderflow, allowing the user to deal with it as
 // necessary. Note that underflow, under certain rare circumstances,
 // may still result in incorrect probabilities being returned,
-// but this method guarantees that all panic-less invokations
+// but this method guarantees that all error-less invokations
 // are properly classified.
 //
 // Underflow detection is more costly because it also
@@ -360,7 +363,7 @@ func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, st
 	// relation between scores and logScores
 	// must be preserved or something is wrong
 	if inx != logInx || strict != logStrict {
-		err = errors.New("possible underflow detected")
+		err = ErrUnderflow
 	}
 	c.seen++
 	return scores, inx, strict, err
