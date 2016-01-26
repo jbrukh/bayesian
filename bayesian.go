@@ -66,12 +66,12 @@ import (
 // we have not seen before appears in the class.
 const defaultProb = 0.00000000001
 
-// ErrUnderflow is returned when an underflow is detected
+// ErrUnderflow is returned when an underflow is detected.
 var ErrUnderflow = errors.New("possible underflow detected")
 
-// Class defines a set of classes that the classifier will
-// filter: C = {C_1, ..., C_n}. You should define your classes
-// as a set of constants, for example as follows:
+// Class defines a class that the classifier will filter:
+// C = {C_1, ..., C_n}. You should define your classes as a
+// set of constants, for example as follows:
 //
 //    const (
 //        Good Class = "Good"
@@ -139,7 +139,7 @@ func (d *classData) getWordsProb(words []string) (prob float64) {
 	return
 }
 
-// NewClassifier returns a new classifier. The classes the provided
+// NewClassifier returns a new classifier. The classes provided
 // should be at least 2 in number and unique, or this method will
 // panic.
 func NewClassifier(classes ...Class) (c *Classifier) {
@@ -180,7 +180,7 @@ func NewClassifierFromFile(name string) (c *Classifier, err error) {
 	return NewClassifierFromReader(file)
 }
 
-//This actually does the deserializing of a Gob encoded classifier
+// NewClassifierFromReader actually does the deserializing of a Gob encoded classifier.
 func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
 	dec := gob.NewDecoder(r)
 	w := new(serializableClassifier)
@@ -391,7 +391,7 @@ func (c *Classifier) WordFrequencies(words []string) (freqMatrix [][]float64) {
 	return
 }
 
-// WordsByClass returns a map of words and thgeir probability of
+// WordsByClass returns a map of words and their probability of
 // appearing in the given class.
 func (c *Classifier) WordsByClass(class Class) (freqMap map[string]float64) {
 	freqMap = make(map[string]float64)
@@ -431,14 +431,14 @@ func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 	return
 }
 
-//Serialize this classifier to GOB and write to Writer
+// Serialize this classifier to GOB and write to Writer.
 func (c *Classifier) WriteTo(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
 	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas})
 	return
 }
 
-// ReadClassFromFile load an existing classData from
+// ReadClassFromFile loads existing class data from a
 // file.
 func (c *Classifier) ReadClassFromFile(class Class, location string) (err error) {
 	fileName := filepath.Join(location, string(class))
