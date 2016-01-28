@@ -53,6 +53,34 @@ func TestOneClass(t *testing.T) {
 	Assert(t, false, "should have panicked:", c)
 }
 
+func TestObserve(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+	c.Observe("tall", 2, Good)
+	c.Observe("handsome", 1, Good)
+	c.Observe("rich", 1, Good)
+	c.Observe("bald", 1, Bad)
+	c.Observe("poor", 2, Bad)
+	c.Observe("ugly", 1, Bad)
+
+	score, likely, strict := c.LogScores([]string{"the", "tall", "man"})
+	fmt.Printf("%v\n", score)
+	Assert(t, score[0] > score[1], "not good, round 1") // this is good
+	Assert(t, likely == 0, "not good, round 1")
+	Assert(t, strict == true, "not strict, round 1")
+
+	score, likely, strict = c.LogScores([]string{"poor", "ugly", "girl"})
+	fmt.Printf("%v\n", score)
+	Assert(t, score[0] < score[1]) // this is bad
+	Assert(t, likely == 1)
+	Assert(t, strict == true)
+
+	score, likely, strict = c.LogScores([]string{"the", "bad", "man"})
+	fmt.Printf("%v\n", score)
+	Assert(t, score[0] == score[1], "not the same") // same
+	Assert(t, likely == 0, "not good")              // first one is picked
+	Assert(t, strict == false, "not strict")
+}
+
 func TestLearn(t *testing.T) {
 	c := NewClassifier(Good, Bad)
 	c.Learn([]string{"tall", "handsome", "rich"}, Good)
