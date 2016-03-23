@@ -234,6 +234,14 @@ func (c *Classifier) WordCount() (result []int) {
 	return
 }
 
+// Observe should be used when word-frequencies have been already been learned
+// externally (e.g., hadoop)
+func (c *Classifier) Observe(word string, count int, which Class) {
+	data := c.datas[which]
+	data.Freqs[word] += count
+	data.Total += count
+}
+
 // Learn will accept new training documents for
 // supervised learning.
 func (c *Classifier) Learn(document []string, which Class) {
