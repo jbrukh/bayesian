@@ -25,7 +25,7 @@ Using the go command:
 
 ### Documentation
 
-See the GoPkgDoc documentation [here](http://gopkgdoc.appspot.com/pkg/github.com/jbrukh/bayesian).
+See the GoPkgDoc documentation [here](https://godoc.org/github.com/jbrukh/bayesian).
 
 ------------
 
