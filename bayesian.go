@@ -273,16 +273,14 @@ func (c *Classifier) Learn(document []string, which Class) {
 // Unlike c.Probabilities(), this function is not prone to
 // floating point underflow and is relatively safe to use.
 func (c *Classifier) LogScores(document []string) (scores []float64, inx int, strict bool) {
-	n := len(c.Classes)
-	scores = make([]float64, n, n)
-	priors := c.getPriors()
+	scores = c.getPriors()
 
 	// calculate the score for each class
 	for index, class := range c.Classes {
 		data := c.datas[class]
 		// c is the sum of the logarithms
 		// as outlined in the refresher
-		score := math.Log(priors[index])
+		score := math.Log(scores[index])
 		for _, word := range document {
 			score += math.Log(data.getWordProb(word))
 		}
@@ -305,15 +303,14 @@ func (c *Classifier) LogScores(document []string) (scores []float64, inx int, st
 // instead.
 func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict bool) {
 	n := len(c.Classes)
-	scores = make([]float64, n, n)
-	priors := c.getPriors()
+	scores = c.getPriors()
 	sum := float64(0)
 	// calculate the score for each class
 	for index, class := range c.Classes {
 		data := c.datas[class]
 		// c is the sum of the logarithms
 		// as outlined in the refresher
-		score := priors[index]
+		score := scores[index]
 		for _, word := range doc {
 			score *= data.getWordProb(word)
 		}
@@ -341,17 +338,16 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 // has to make additional log score calculations.
 func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool, err error) {
 	n := len(c.Classes)
-	scores = make([]float64, n, n)
+	scores = c.getPriors()
 	logScores := make([]float64, n, n)
-	priors := c.getPriors()
 	sum := float64(0)
 	// calculate the score for each class
 	for index, class := range c.Classes {
 		data := c.datas[class]
 		// c is the sum of the logarithms
 		// as outlined in the refresher
-		score := priors[index]
-		logScore := math.Log(priors[index])
+		score := scores[index]
+		logScore := math.Log(scores[index])
 		for _, word := range doc {
 			p := data.getWordProb(word)
 			score *= p
