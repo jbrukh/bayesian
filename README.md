@@ -17,10 +17,10 @@ See code comments for a refresher on naive Bayesian classifiers.
 ### Installation
 
 Using the go command:
-
-    $ go get github.com/jbrukh/bayesian
-    $ go install !$
-
+```shell
+go get github.com/jbrukh/bayesian
+go install !$
+```
 ------------
 
 ### Documentation
@@ -41,33 +41,33 @@ See the GoPkgDoc documentation [here](https://godoc.org/github.com/jbrukh/bayesi
 
 To use the classifier, first you must create some classes
 and train it:
+```go
+import . "bayesian"
 
-    import . "bayesian"
+const (
+    Good Class = "Good"
+    Bad Class = "Bad"
+)
 
-    const (
-        Good Class = "Good"
-        Bad Class = "Bad"
-    )
-    
-    classifier := NewClassifier(Good, Bad)
-    goodStuff := []string{"tall", "rich", "handsome"}
-    badStuff  := []string{"poor", "smelly", "ugly"}
-    classifier.Learn(goodStuff, Good)
-    classifier.Learn(badStuff,  Bad)
-
+classifier := NewClassifier(Good, Bad)
+goodStuff := []string{"tall", "rich", "handsome"}
+badStuff  := []string{"poor", "smelly", "ugly"}
+classifier.Learn(goodStuff, Good)
+classifier.Learn(badStuff,  Bad)
+```
 Then you can ascertain the scores of each class and
 the most likely class your data belongs to:
-
-    scores, likely, _ := classifier.LogScores(
-                            []string{"tall", "girl"}
-                         )
-
+```go
+scores, likely, _ := classifier.LogScores(
+                        []string{"tall", "girl"}
+                     )
+```
 Magnitude of the score indicates likelihood. Alternatively (but
 with some risk of float underflow), you can obtain actual probabilities:
 
-
-    probs, likely, _ := classifier.ProbScores(
-                            []string{"tall", "girl"}
-                         )
-
+```go
+probs, likely, _ := classifier.ProbScores(
+                        []string{"tall", "girl"}
+                     )
+```
 Use wisely.
