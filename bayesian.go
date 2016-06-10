@@ -85,7 +85,7 @@ type Class string
 type Classifier struct {
 	Classes         []Class
 	learned         int // docs learned
-	seen            int // docs seen
+	seen            int32 // docs seen
 	datas           map[Class]*classData
 	tfIdf           bool
 	DidConvertTfIdf bool // we can't classify a TD-IDF classifier if we haven't yet
@@ -220,13 +220,14 @@ func NewClassifierFromFile(name string) (c *Classifier, err error) {
 	return NewClassifierFromReader(file)
 }
 
-// NewClassifierFromReader actually does the deserializing of a Gob encoded classifier.
+//This actually does the deserializing of a Gob encoded classifier
 func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
 	dec := gob.NewDecoder(r)
 	w := new(serializableClassifier)
 	err = dec.Decode(w)
 
 	return &Classifier{w.Classes, w.Learned, w.Seen, w.Datas, w.TfIdf, w.DidConvertTfIdf}, err
+
 }
 
 // getPriors returns the prior probabilities for the
@@ -260,7 +261,7 @@ func (c *Classifier) Learned() int {
 // Seen returns the number of documents ever classified
 // in the lifetime of this classifier.
 func (c *Classifier) Seen() int {
-	return c.seen
+	return int(atomic.LoadInt32(&c.seen))
 }
 
 // Returns if we are a classifier of type TfIdf
@@ -395,7 +396,7 @@ func (c *Classifier) LogScores(document []string) (scores []float64, inx int, st
 		scores[index] = score
 	}
 	inx, strict = findMax(scores)
-	c.seen++
+	atomic.AddInt32(&c.seen, 1)
 	return scores, inx, strict
 }
 
@@ -433,7 +434,7 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 		scores[i] /= sum
 	}
 	inx, strict = findMax(scores)
-	c.seen++
+	atomic.AddInt32(&c.seen, 1)
 	return scores, inx, strict
 }
 
@@ -486,7 +487,7 @@ func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, st
 	if inx != logInx || strict != logStrict {
 		err = ErrUnderflow
 	}
-	c.seen++
+	atomic.AddInt32(&c.seen, 1)
 	return scores, inx, strict, err
 }
 
