@@ -227,8 +227,7 @@ func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
 	w := new(serializableClassifier)
 	err = dec.Decode(w)
 
-	return &Classifier{w.Classes, w.Learned, w.Seen, w.Datas, w.TfIdf, w.DidConvertTfIdf}, err
-
+	return &Classifier{w.Classes, w.Learned, int32(w.Seen), w.Datas, w.TfIdf, w.DidConvertTfIdf}, err
 }
 
 // getPriors returns the prior probabilities for the
@@ -451,6 +450,7 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 // Underflow detection is more costly because it also
 // has to make additional log score calculations.
 func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool, err error) {
+
 	if c.tfIdf && !c.DidConvertTfIdf {
 		panic("Using a TF-IDF classifier. Please call ConvertTermsFreqToTfIdf before calling LogScores.")
 	}
@@ -557,7 +557,7 @@ func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 // Serialize this classifier to GOB and write to Writer.
 func (c *Classifier) WriteTo(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
-	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas, c.tfIdf, c.DidConvertTfIdf})
+	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, int(c.seen), c.datas, c.tfIdf, c.DidConvertTfIdf})
 
 	return
 }

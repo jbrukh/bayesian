@@ -43,7 +43,9 @@ See the GoPkgDoc documentation [here](https://godoc.org/github.com/jbrukh/bayesi
 - Statistics.
 
 ------------
+
 ### Example 1 (plain no tf-idf)
+
 
 To use the classifier, first you must create some classes
 and train it:
@@ -96,7 +98,7 @@ badStuff  := []string{"poor", "smelly", "ugly"}
 classifier.Learn(goodStuff, Good)
 classifier.Learn(badStuff,  Bad)
 
-classifier.ConvertTermsFreqToTFIDF() // IMPORTANT !!
+classifier.ConvertTermsFreqToTfIdf() // IMPORTANT !!
 ```
 Then you can ascertain the scores of each class and
 the most likely class your data belongs to:
