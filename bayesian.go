@@ -85,7 +85,7 @@ type Class string
 // Classifier implements the Naive Bayesian Classifier.
 type Classifier struct {
 	Classes         []Class
-	learned         int // docs learned
+	learned         int   // docs learned
 	seen            int32 // docs seen
 	datas           map[Class]*classData
 	tfIdf           bool
