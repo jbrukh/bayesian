@@ -411,7 +411,7 @@ func (c *Classifier) LogScores(document []string) (scores []float64, inx int, st
 // instead.
 func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict bool) {
 	if c.tfIdf && !c.didConvertTfIdf {
-		panic("Error:Using TD-IDF classifier:Need to call ConvertTermsFreqsToTFIDF's first ")
+		panic("Error:Using TF-IDF classifier:Need to call ConvertTermsFreqsToTFIDF's first ")
 	}
 	n := len(c.Classes)
 	scores = make([]float64, n, n)
