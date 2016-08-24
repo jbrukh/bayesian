@@ -349,7 +349,7 @@ func TestTfIdClassifier_LogScore(t *testing.T) {
 	score, likely, strict := c.LogScores([]string{"the", "tall", "man"})
 
 	Assert(t, score[0] == float64(-53.028113582945196))
-	Assert(t, score[0] > score[1], "Class 'Good' should be closer to 0 than Class 'Bad'") // this is good
+	Assert(t, score[0] > score[1], "Class 'Good' should be closer to 0 than Class 'Bad' - both will be negative") // this is good
 	Assert(t, likely == 0, "Class should be 'Good'")
 	Assert(t, strict == true, "No tie's")
 	fmt.Printf("%#v", score)
