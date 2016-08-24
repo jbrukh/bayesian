@@ -43,7 +43,7 @@ See the GoPkgDoc documentation [here](https://godoc.org/github.com/jbrukh/bayesi
 - Statistics.
 
 ------------
-### Example 1 (plain no td-idf)
+### Example 1 (plain no tf-idf)
 
 To use the classifier, first you must create some classes
 and train it:
@@ -77,9 +77,9 @@ probs, likely, _ := classifier.ProbScores(
                      )
 ```
 
-### Example 2 (TD-IDF)
-To use the TD-IDF classifier, first you must create some classes
-and train it AND you need to call ConvertTermsFreqToTFIDF() AFTER training
+### Example 2 (TF-IDF)
+To use the TF-IDF classifier, first you must create some classes
+and train it AND you need to call ConvertTermsFreqToTfIdf() AFTER training
 and before Classifying methods(LogScore,ProbSafeScore,ProbScore)
 
 ```go
@@ -90,13 +90,13 @@ const (
     Bad Class = "Bad"
 )
 
-classifier := NewClassifierTFIDF(Good, Bad) //Extra constructor
+classifier := NewClassiferTfIdf(Good, Bad) // Extra constructor
 goodStuff := []string{"tall", "rich", "handsome"}
 badStuff  := []string{"poor", "smelly", "ugly"}
 classifier.Learn(goodStuff, Good)
 classifier.Learn(badStuff,  Bad)
 
-classifier.ConvertTermsFreqToTFIDF() //IMPORTANT !!
+classifier.ConvertTermsFreqToTFIDF() // IMPORTANT !!
 ```
 Then you can ascertain the scores of each class and
 the most likely class your data belongs to:
