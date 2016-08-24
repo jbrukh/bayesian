@@ -1,4 +1,4 @@
-## Naive Bayesian Classification with TD-IDF support
+## Naive Bayesian Classification with TF-IDF support
 
 Perform naive Bayesian classification into an arbitrary number of classes on sets of strings.
 

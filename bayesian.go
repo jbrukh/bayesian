@@ -89,7 +89,7 @@ type Classifier struct {
 	seen            int32 // docs seen
 	datas           map[Class]*classData
 	tfIdf           bool
-	DidConvertTfIdf bool // we can't classify a TD-IDF classifier if we haven't yet
+	DidConvertTfIdf bool // we can't classify a TF-IDF classifier if we haven't yet
 	// called ConverTermsFreqToTfIdf
 }
 
@@ -325,12 +325,12 @@ func (c *Classifier) Learn(document []string, which Class) {
 }
 
 // Here we use all the TF samples for the class and convert
-// them to TD-IDF https://en.wikipedia.org/wiki/Tf%E2%80%93idf
+// them to TF-IDF https://en.wikipedia.org/wiki/Tf%E2%80%93idf
 // once we have finished learning all the classes and have the totals
 func (c *Classifier) ConvertTermsFreqToTfIdf() {
 
 	if c.DidConvertTfIdf {
-		panic("Error:TfIdf-Mode:Cumulative counts - can only call this once. Reset and relearn.")
+		panic("TfIdf-Mode:Cumulative counts - can only call this once. Reset and relearn.")
 	}
 
 	for className, _ := range c.datas {
