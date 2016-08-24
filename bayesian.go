@@ -298,7 +298,6 @@ func (c *Classifier) Learn(document []string, which Class) {
 	if c.tfIdf {
 		if c.DidConvertTfIdf {
 			panic("Cannot call ConvertTermsFreqToTfIdf more than once. Reset and relearn to reconvert.")
-
 		}
 
 		// Term Frequency: word count in document / document length
@@ -331,10 +330,6 @@ func (c *Classifier) Learn(document []string, which Class) {
 func (c *Classifier) ConvertTermsFreqToTfIdf() {
 
 	if c.DidConvertTfIdf {
-		panic("Error:TfIdf-Mode:Cumulative counts - can only call this once. Reset and relearn.")
-	}
-
-	if c.didConvertTfIdf {
 		panic("Error:TfIdf-Mode:Cumulative counts - can only call this once. Reset and relearn.")
 	}
 
