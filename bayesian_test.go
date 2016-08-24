@@ -243,3 +243,115 @@ func TestFreqMatrixConstruction(t *testing.T) {
 		}
 	}
 }
+
+func TestTfIdClassifier_SanityChecks(t *testing.T) {
+	c := NewClassifierTFIDF(Good, Bad)
+	Assert(t, c.IsTfIdf() == true)
+
+	c.Learn([]string{"tall", "handsome", "rich"}, Good)
+
+	defer func() {
+		if err := recover(); err != nil {
+			// we are good
+		}
+	}()
+	c.LogScores([]string{"a", "b", "c"})
+	Assert(t, false, "Should have panicked:Need to run ConvertTermsFreqToTFIDF() first..", c)
+
+}
+
+func TestTfIdClassifier_Tf_Checks(t *testing.T) {
+	c := NewClassifierTFIDF(Good, Bad)
+	Assert(t, c.IsTfIdf() == true)
+
+	c.Learn([]string{"tall", "handsome", "rich"}, Good)
+	c.Learn([]string{"tall", "blonde"}, Good)
+	c.Learn([]string{"tall"}, Good)
+
+	data := c.datas[Good]
+	// Total words seen in training.
+	Assert(t, data.Total == 6)
+
+	// Plain old counts for words.
+	Assert(t, data.Freqs["tall"] == 3)
+	Assert(t, data.Freqs["blonde"] == 1)
+
+	// Check for term frequency's per 'document' (tall)
+	Assert(t, data.FreqTfs["tall"][0] == float64(0.3333333333333333))
+	Assert(t, data.FreqTfs["tall"][1] == float64(0.5))
+	Assert(t, data.FreqTfs["tall"][2] == float64(1))
+
+	// Check for term frequency's per 'document' (blonde)
+	Assert(t, data.FreqTfs["blonde"][0] == float64(0.5))
+
+}
+
+func TestTfIdClassifier_ConvertToTfIdf(t *testing.T) {
+	c := NewClassifierTFIDF(Good, Bad)
+	Assert(t, c.IsTfIdf() == true)
+
+	c.Learn([]string{"tall", "handsome", "rich"}, Good)
+	c.Learn([]string{"tall", "blonde"}, Good)
+	c.Learn([]string{"tall"}, Good)
+
+	// Now we convert the TF's to Tf/Idf
+	// We can only this after we have learned all the documents and classes.
+	// We can add more learning afterwards but need to call ConvertToTfIdf() again before
+	// we can predict classes.
+	c.ConvertTermsFreqToTFIDF()
+
+	data := c.datas[Good]
+
+	// Tf-Idf after we have converted the tf's
+	Assert(t, data.Freqs["tall"] == float64(0.5620939930012151))
+	Assert(t, data.Freqs["blonde"] == float64(0.16440195389316542))
+	Assert(t, data.Freqs["notseen"] == float64(0))
+	Assert(t, data.FreqTfs["tall"][0] == float64(0.11664504260744213))
+	Assert(t, data.FreqTfs["tall"][1] == float64(0.16440195389316542))
+	Assert(t, data.FreqTfs["tall"][2] == float64(0.28104699650060755))
+
+}
+
+func TestTfIdClassifier_CheckForDoubleConvert(t *testing.T) {
+
+	c := NewClassifierTFIDF(Good, Bad)
+	Assert(t, c.IsTfIdf() == true)
+
+	c.Learn([]string{"tall", "handsome", "rich"}, Good)
+	c.Learn([]string{"tall", "blonde"}, Good)
+	c.Learn([]string{"tall"}, Good)
+
+	// We can only call ConverToTdfIdf once per learning cycle (cumulative counts).
+	c.ConvertTermsFreqToTFIDF()
+
+	defer func() {
+		if err := recover(); err != nil {
+			// we are good
+		}
+	}()
+	c.ConvertTermsFreqToTFIDF()
+	Assert(t, false, "Should have panicked:Can only run ConvertTermsFreqToTFIDF() once after a learning cycle.", c)
+
+}
+
+func TestTfIdClassifier_LogScore(t *testing.T) {
+	c := NewClassifierTFIDF(Good, Bad)
+	Assert(t, c.IsTfIdf() == true)
+
+	c.Learn([]string{"tall", "handsome", "rich"}, Good)
+	c.Learn([]string{"tall", "blonde"}, Good)
+	c.Learn([]string{"tall"}, Good)
+	c.Learn([]string{"fat"}, Bad)
+	c.Learn([]string{"short", "poor"}, Bad)
+
+	c.ConvertTermsFreqToTFIDF()
+
+	score, likely, strict := c.LogScores([]string{"the", "tall", "man"})
+
+	Assert(t, score[0] == float64(-53.028113582945196))
+	Assert(t, score[0] > score[1], "Class 'Good' should be closer to 0 than Class 'Bad'") // this is good
+	Assert(t, likely == 0, "Class should be 'Good'")
+	Assert(t, strict == true, "No tie's")
+	fmt.Printf("%#v", score)
+
+}
