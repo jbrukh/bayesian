@@ -245,7 +245,7 @@ func TestFreqMatrixConstruction(t *testing.T) {
 }
 
 func TestTfIdClassifier_SanityChecks(t *testing.T) {
-	c := NewClassifierTFIDF(Good, Bad)
+	c := NewClassifierTfIdf(Good, Bad)
 	Assert(t, c.IsTfIdf() == true)
 
 	c.Learn([]string{"tall", "handsome", "rich"}, Good)
@@ -256,12 +256,12 @@ func TestTfIdClassifier_SanityChecks(t *testing.T) {
 		}
 	}()
 	c.LogScores([]string{"a", "b", "c"})
-	Assert(t, false, "Should have panicked:Need to run ConvertTermsFreqToTFIDF() first..", c)
+	Assert(t, false, "Should have panicked:Need to run ConvertTermsFreqToTfIdf() first..", c)
 
 }
 
 func TestTfIdClassifier_Tf_Checks(t *testing.T) {
-	c := NewClassifierTFIDF(Good, Bad)
+	c := NewClassifierTfIdf(Good, Bad)
 	Assert(t, c.IsTfIdf() == true)
 
 	c.Learn([]string{"tall", "handsome", "rich"}, Good)
@@ -287,7 +287,7 @@ func TestTfIdClassifier_Tf_Checks(t *testing.T) {
 }
 
 func TestTfIdClassifier_ConvertToTfIdf(t *testing.T) {
-	c := NewClassifierTFIDF(Good, Bad)
+	c := NewClassifierTfIdf(Good, Bad)
 	Assert(t, c.IsTfIdf() == true)
 
 	c.Learn([]string{"tall", "handsome", "rich"}, Good)
@@ -298,7 +298,7 @@ func TestTfIdClassifier_ConvertToTfIdf(t *testing.T) {
 	// We can only this after we have learned all the documents and classes.
 	// We can add more learning afterwards but need to call ConvertToTfIdf() again before
 	// we can predict classes.
-	c.ConvertTermsFreqToTFIDF()
+	c.ConvertTermsFreqToTfIdf()
 
 	data := c.datas[Good]
 
@@ -314,7 +314,7 @@ func TestTfIdClassifier_ConvertToTfIdf(t *testing.T) {
 
 func TestTfIdClassifier_CheckForDoubleConvert(t *testing.T) {
 
-	c := NewClassifierTFIDF(Good, Bad)
+	c := NewClassifierTfIdf(Good, Bad)
 	Assert(t, c.IsTfIdf() == true)
 
 	c.Learn([]string{"tall", "handsome", "rich"}, Good)
@@ -322,20 +322,20 @@ func TestTfIdClassifier_CheckForDoubleConvert(t *testing.T) {
 	c.Learn([]string{"tall"}, Good)
 
 	// We can only call ConverToTdfIdf once per learning cycle (cumulative counts).
-	c.ConvertTermsFreqToTFIDF()
+	c.ConvertTermsFreqToTfIdf()
 
 	defer func() {
 		if err := recover(); err != nil {
 			// we are good
 		}
 	}()
-	c.ConvertTermsFreqToTFIDF()
-	Assert(t, false, "Should have panicked:Can only run ConvertTermsFreqToTFIDF() once after a learning cycle.", c)
+	c.ConvertTermsFreqToTfIdf()
+	Assert(t, false, "Should have panicked:Can only run ConvertTermsFreqToTfIdf() once after a learning cycle.", c)
 
 }
 
 func TestTfIdClassifier_LogScore(t *testing.T) {
-	c := NewClassifierTFIDF(Good, Bad)
+	c := NewClassifierTfIdf(Good, Bad)
 	Assert(t, c.IsTfIdf() == true)
 
 	c.Learn([]string{"tall", "handsome", "rich"}, Good)
@@ -344,7 +344,7 @@ func TestTfIdClassifier_LogScore(t *testing.T) {
 	c.Learn([]string{"fat"}, Bad)
 	c.Learn([]string{"short", "poor"}, Bad)
 
-	c.ConvertTermsFreqToTFIDF()
+	c.ConvertTermsFreqToTfIdf()
 
 	score, likely, strict := c.LogScores([]string{"the", "tall", "man"})
 

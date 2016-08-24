@@ -88,8 +88,8 @@ type Classifier struct {
 	seen            int // docs seen
 	datas           map[Class]*classData
 	tfIdf           bool
-	didConvertTfIdf bool // we can't classify a TD-IDF classifier if we haven't yet
-	// called ConvertTermsFreqToTFIDF
+	DidConvertTfIdf bool // we can't classify a TD-IDF classifier if we haven't yet
+	// called ConverTermsFreqToTfIdf
 }
 
 // serializableClassifier represents a container for
@@ -101,7 +101,7 @@ type serializableClassifier struct {
 	Seen            int
 	Datas           map[Class]*classData
 	TfIdf           bool
-	DidConvertTFIDF bool
+	DidConvertTfIdf bool
 }
 
 // classData holds the frequency data for words in a
@@ -146,10 +146,10 @@ func (d *classData) getWordsProb(words []string) (prob float64) {
 	return
 }
 
-// NewClassifier returns a new classifier. The classes provided
+// NewClassifierTfIdf returns a new classifier. The classes provided
 // should be at least 2 in number and unique, or this method will
 // panic.
-func NewClassifierTFIDF(classes ...Class) (c *Classifier) {
+func NewClassifierTfIdf(classes ...Class) (c *Classifier) {
 	n := len(classes)
 
 	// check size
@@ -201,7 +201,7 @@ func NewClassifier(classes ...Class) (c *Classifier) {
 		Classes:         classes,
 		datas:           make(map[Class]*classData, n),
 		tfIdf:           false,
-		didConvertTfIdf: false,
+		DidConvertTfIdf: false,
 	}
 	for _, class := range classes {
 		c.datas[class] = newClassData()
@@ -226,7 +226,7 @@ func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
 	w := new(serializableClassifier)
 	err = dec.Decode(w)
 
-	return &Classifier{w.Classes, w.Learned, w.Seen, w.Datas, w.TfIdf, w.DidConvertTFIDF}, err
+	return &Classifier{w.Classes, w.Learned, w.Seen, w.Datas, w.TfIdf, w.DidConvertTfIdf}, err
 }
 
 // getPriors returns the prior probabilities for the
@@ -295,8 +295,8 @@ func (c *Classifier) Learn(document []string, which Class) {
 	// terms frequency and store that to work out the idf part later
 	// in ConvertToIDF().
 	if c.tfIdf {
-		if c.didConvertTfIdf {
-			panic("Error:TfIdf-Mode:We cannot continue learning after we have run ConvertToTfIdf(). Reset and relearn.")
+		if c.DidConvertTfIdf {
+			panic("Cannot call ConvertTermsFreqToTfIdf more than once. Reset and relearn to reconvert.")
 		}
 
 		// Term Frequency: word count in document / document length
@@ -326,9 +326,9 @@ func (c *Classifier) Learn(document []string, which Class) {
 // Here we use all the TF samples for the class and convert
 // them to TD-IDF https://en.wikipedia.org/wiki/Tf%E2%80%93idf
 // once we have finished learning all the classes and have the totals
-func (c *Classifier) ConvertTermsFreqToTFIDF() {
+func (c *Classifier) ConvertTermsFreqToTfIdf() {
 
-	if c.didConvertTfIdf {
+	if c.DidConvertTfIdf {
 		panic("Error:TfIdf-Mode:Cumulative counts - can only call this once. Reset and relearn.")
 	}
 
@@ -351,7 +351,7 @@ func (c *Classifier) ConvertTermsFreqToTFIDF() {
 	}
 
 	// sanity check
-	c.didConvertTfIdf = true
+	c.DidConvertTfIdf = true
 
 }
 
@@ -375,8 +375,8 @@ func (c *Classifier) ConvertTermsFreqToTFIDF() {
 // Unlike c.Probabilities(), this function is not prone to
 // floating point underflow and is relatively safe to use.
 func (c *Classifier) LogScores(document []string) (scores []float64, inx int, strict bool) {
-	if c.tfIdf && !c.didConvertTfIdf {
-		panic("Error:Using TD-IDF classifier:Need to call ConvertTermsFreqsToTFIDF's first ")
+	if c.tfIdf && !c.DidConvertTfIdf {
+		panic("Error:Using TF-IDF classifier:Need to call ConvertTermsFreqToTfIdf's first ")
 	}
 
 	n := len(c.Classes)
@@ -410,8 +410,8 @@ func (c *Classifier) LogScores(document []string) (scores []float64, inx int, st
 // may or may not be a concern. Consider using SafeProbScores()
 // instead.
 func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict bool) {
-	if c.tfIdf && !c.didConvertTfIdf {
-		panic("Error:Using TF-IDF classifier:Need to call ConvertTermsFreqsToTFIDF's first ")
+	if c.tfIdf && !c.DidConvertTfIdf {
+		panic("Using a TF-IDF classifier. Please call ConvertTermsFreqToTfIdf before calling ProbScores.")
 	}
 	n := len(c.Classes)
 	scores = make([]float64, n, n)
@@ -449,8 +449,8 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 // Underflow detection is more costly because it also
 // has to make additional log score calculations.
 func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool, err error) {
-	if c.tfIdf && !c.didConvertTfIdf {
-		panic("Error:Using TD-IDF classifier:Need to call ConvertTermsFreqsToTFIDF's first ")
+	if c.tfIdf && !c.DidConvertTfIdf {
+		panic("Using a TF-IDF classifier. Please call ConvertTermsFreqToTfIdf before calling LogScores.")
 	}
 
 	n := len(c.Classes)
@@ -555,7 +555,7 @@ func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 // Serialize this classifier to GOB and write to Writer.
 func (c *Classifier) WriteTo(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
-	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas, c.tfIdf, c.didConvertTfIdf})
+	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas, c.tfIdf, c.DidConvertTfIdf})
 	return
 }
 
