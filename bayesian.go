@@ -298,6 +298,7 @@ func (c *Classifier) Learn(document []string, which Class) {
 	if c.tfIdf {
 		if c.DidConvertTfIdf {
 			panic("Cannot call ConvertTermsFreqToTfIdf more than once. Reset and relearn to reconvert.")
+
 		}
 
 		// Term Frequency: word count in document / document length
@@ -330,6 +331,10 @@ func (c *Classifier) Learn(document []string, which Class) {
 func (c *Classifier) ConvertTermsFreqToTfIdf() {
 
 	if c.DidConvertTfIdf {
+		panic("Error:TfIdf-Mode:Cumulative counts - can only call this once. Reset and relearn.")
+	}
+
+	if c.didConvertTfIdf {
 		panic("Error:TfIdf-Mode:Cumulative counts - can only call this once. Reset and relearn.")
 	}
 
@@ -450,7 +455,6 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 // Underflow detection is more costly because it also
 // has to make additional log score calculations.
 func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool, err error) {
-
 	if c.tfIdf && !c.DidConvertTfIdf {
 		panic("Using a TF-IDF classifier. Please call ConvertTermsFreqToTfIdf before calling LogScores.")
 	}
