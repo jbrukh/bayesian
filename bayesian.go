@@ -326,7 +326,7 @@ func (c *Classifier) Learn(document []string, which Class) {
 
 // Here we use all the TF samples for the class and convert
 // them to TF-IDF https://en.wikipedia.org/wiki/Tf%E2%80%93idf
-// once we have finished learning all the classes and have the totals
+// once we have finished learning all the classes and have the totals.
 func (c *Classifier) ConvertTermsFreqToTfIdf() {
 
 	if c.DidConvertTfIdf {
