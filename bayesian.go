@@ -60,6 +60,7 @@ import (
 	"math"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 )
 
 // defaultProb is the tiny non-zero probability that a word
@@ -557,6 +558,7 @@ func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 func (c *Classifier) WriteTo(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
 	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, c.seen, c.datas, c.tfIdf, c.DidConvertTfIdf})
+
 	return
 }
 
