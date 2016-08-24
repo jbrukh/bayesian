@@ -330,7 +330,7 @@ func (c *Classifier) Learn(document []string, which Class) {
 func (c *Classifier) ConvertTermsFreqToTfIdf() {
 
 	if c.DidConvertTfIdf {
-		panic("TfIdf-Mode:Cumulative counts - can only call this once. Reset and relearn.")
+		panic("Cannot call ConvertTermsFreqToTfIdf more than once. Reset and relearn to reconvert.")
 	}
 
 	for className, _ := range c.datas {
@@ -377,7 +377,7 @@ func (c *Classifier) ConvertTermsFreqToTfIdf() {
 // floating point underflow and is relatively safe to use.
 func (c *Classifier) LogScores(document []string) (scores []float64, inx int, strict bool) {
 	if c.tfIdf && !c.DidConvertTfIdf {
-		panic("Error:Using TF-IDF classifier:Need to call ConvertTermsFreqToTfIdf's first ")
+		panic("Using a TF-IDF classifier. Please call ConvertTermsFreqToTfIdf before calling LogScores.")
 	}
 
 	n := len(c.Classes)
@@ -451,7 +451,7 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 // has to make additional log score calculations.
 func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool, err error) {
 	if c.tfIdf && !c.DidConvertTfIdf {
-		panic("Using a TF-IDF classifier. Please call ConvertTermsFreqToTfIdf before calling LogScores.")
+		panic("Using a TF-IDF classifier. Please call ConvertTermsFreqToTfIdf before calling SafeProbScores.")
 	}
 
 	n := len(c.Classes)
