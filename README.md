@@ -92,7 +92,7 @@ const (
     Bad Class = "Bad"
 )
 
-classifier := NewClassiferTfIdf(Good, Bad) // Extra constructor
+classifier := NewClassifierTfIdf(Good, Bad) // Extra constructor
 goodStuff := []string{"tall", "rich", "handsome"}
 badStuff  := []string{"poor", "smelly", "ugly"}
 classifier.Learn(goodStuff, Good)
