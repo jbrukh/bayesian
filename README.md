@@ -1,22 +1,15 @@
-## Naive Bayesian Classification with TF-IDF support
+## Naive Bayesian Classification
 
-Perform naive Bayesian classification into an arbitrary number of classes on sets of strings.
+Perform naive Bayesian classification into an arbitrary number of classes on sets of strings. `bayesian` also supports term frequency-inverse document frequency calculations ([TF-IDF](https://www.wikiwand.com/en/Tf%E2%80%93idf)).
 
-Copyright (c) 2011. Jake Brukhman. (jbrukh@gmail.com).
-All rights reserved.  See the LICENSE file for BSD-style
-license.
-
-Forked from github.com/jbrukh/bayesian
-
-Added TF-IDF (term frequency–inverse document frequency) capability.
-Gain quite a bit of accurancy !
-
+Copyright (c) 2011-2017. Jake Brukhman. (jbrukh@gmail.com).
+All rights reserved.  See the LICENSE file for BSD-style license.
 
 ------------
 
 ### Background
 
-See code comments for a refresher on naive Bayesian classifiers.
+This is meant to be an low-entry barrier Go library for basic Bayesian classification. See code comments for a refresher on naive Bayesian classifiers, and please take some time to understand underflow edge cases as this otherwise may result in innacurate classifications.
 
 ------------
 
@@ -41,14 +34,15 @@ See the GoPkgDoc documentation [here](https://godoc.org/github.com/jbrukh/bayesi
 - Underflow detection.
 - Simple persistence of classifiers.
 - Statistics.
+- TF-IDF support.
 
 ------------
 
-### Example 1 (plain no tf-idf)
-
+### Example 1 (Simple Classification)
 
 To use the classifier, first you must create some classes
 and train it:
+
 ```go
 import . "bayesian"
 
@@ -79,10 +73,11 @@ probs, likely, _ := classifier.ProbScores(
                      )
 ```
 
-### Example 2 (TF-IDF)
+### Example 2 (TF-IDF Support)
+
 To use the TF-IDF classifier, first you must create some classes
-and train it AND you need to call ConvertTermsFreqToTfIdf() AFTER training
-and before Classifying methods(LogScore,ProbSafeScore,ProbScore)
+and train it and you need to call ConvertTermsFreqToTfIdf() AFTER training
+and before calling classification methods such as `LogScores`, `SafeProbScores`, and `ProbScores`)
 
 ```go
 import . "bayesian"
@@ -92,16 +87,22 @@ const (
     Bad Class = "Bad"
 )
 
-classifier := NewClassifierTfIdf(Good, Bad) // Extra constructor
+// Create a classifier with TF-IDF support.
+classifier := NewClassifierTfIdf(Good, Bad)
+
 goodStuff := []string{"tall", "rich", "handsome"}
 badStuff  := []string{"poor", "smelly", "ugly"}
+
 classifier.Learn(goodStuff, Good)
 classifier.Learn(badStuff,  Bad)
 
-classifier.ConvertTermsFreqToTfIdf() // IMPORTANT !!
+// Required
+classifier.ConvertTermsFreqToTfIdf()
 ```
+
 Then you can ascertain the scores of each class and
 the most likely class your data belongs to:
+
 ```go
 scores, likely, _ := classifier.LogScores(
                         []string{"tall", "girl"}
