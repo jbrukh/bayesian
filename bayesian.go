@@ -87,7 +87,7 @@ type Classifier struct {
 	Classes         []Class
 	learned         int   // docs learned
 	seen            int32 // docs seen
-	datas           map[Class]*classData
+	datas           map[Class]classData
 	tfIdf           bool
 	DidConvertTfIdf bool // we can't classify a TF-IDF classifier if we haven't yet
 	// called ConverTermsFreqToTfIdf
@@ -100,7 +100,7 @@ type serializableClassifier struct {
 	Classes         []Class
 	Learned         int
 	Seen            int
-	Datas           map[Class]*classData
+	Datas           map[Class]classData
 	TfIdf           bool
 	DidConvertTfIdf bool
 }
@@ -116,8 +116,8 @@ type classData struct {
 }
 
 // newClassData creates a new empty classData node.
-func newClassData() *classData {
-	return &classData{
+func newClassData() classData {
+	return classData{
 		Freqs:   make(map[string]float64),
 		FreqTfs: make(map[string][]float64),
 	}
@@ -125,7 +125,7 @@ func newClassData() *classData {
 
 // getWordProb returns P(W|C_j) -- the probability of seeing
 // a particular word W in a document of this class.
-func (d *classData) getWordProb(word string) float64 {
+func (d classData) getWordProb(word string) float64 {
 	value, ok := d.Freqs[word]
 	if !ok {
 		return defaultProb
@@ -139,7 +139,7 @@ func (d *classData) getWordProb(word string) float64 {
 // Note that words should not be empty, and this method of
 // calulation is prone to underflow if there are many words
 // and their individual probabilties are small.
-func (d *classData) getWordsProb(words []string) (prob float64) {
+func (d classData) getWordsProb(words []string) (prob float64) {
 	prob = 1
 	for _, word := range words {
 		prob *= d.getWordProb(word)
@@ -169,7 +169,7 @@ func NewClassifierTfIdf(classes ...Class) (c *Classifier) {
 	// create the classifier
 	c = &Classifier{
 		Classes: classes,
-		datas:   make(map[Class]*classData, n),
+		datas:   make(map[Class]classData, n),
 		tfIdf:   true,
 	}
 	for _, class := range classes {
@@ -200,7 +200,7 @@ func NewClassifier(classes ...Class) (c *Classifier) {
 	// create the classifier
 	c = &Classifier{
 		Classes:         classes,
-		datas:           make(map[Class]*classData, n),
+		datas:           make(map[Class]classData, n),
 		tfIdf:           false,
 		DidConvertTfIdf: false,
 	}
