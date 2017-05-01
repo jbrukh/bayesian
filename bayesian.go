@@ -274,8 +274,7 @@ func (c *Classifier) IsTfIdf() bool {
 func (c *Classifier) WordCount() (result []int) {
 	result = make([]int, len(c.Classes))
 	for inx, class := range c.Classes {
-		data := c.datas[class]
-		result[inx] = data.Total
+		result[inx] = c.datas[class].Total
 	}
 	return
 }
@@ -283,9 +282,10 @@ func (c *Classifier) WordCount() (result []int) {
 // Observe should be used when word-frequencies have been already been learned
 // externally (e.g., hadoop)
 func (c *Classifier) Observe(word string, count int, which Class) {
+	c.datas[which].Freqs[word] += float64(count)
 	data := c.datas[which]
-	data.Freqs[word] += float64(count)
 	data.Total += count
+	c.datas[which] = data
 }
 
 // Learn will accept new training documents for
@@ -316,10 +316,11 @@ func (c *Classifier) Learn(document []string, which Class) {
 
 	}
 
-	data := c.datas[which]
 	for _, word := range document {
-		data.Freqs[word]++
+		c.datas[which].Freqs[word]++
+		data := c.datas[which]
 		data.Total++
+		c.datas[which] = data
 	}
 	c.learned++
 }
@@ -572,7 +573,7 @@ func (c *Classifier) ReadClassFromFile(class Class, location string) (err error)
 	}
 
 	dec := gob.NewDecoder(file)
-	w := new(classData)
+	w := classData{}
 	err = dec.Decode(w)
 
 	c.learned++
