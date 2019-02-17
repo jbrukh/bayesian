@@ -221,7 +221,7 @@ func NewClassifierFromFile(name string) (c *Classifier, err error) {
 	return NewClassifierFromReader(file)
 }
 
-//This actually does the deserializing of a Gob encoded classifier
+// NewClassifierFromReader: This actually does the deserializing of a Gob encoded classifier
 func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
 	dec := gob.NewDecoder(r)
 	w := new(serializableClassifier)
@@ -264,7 +264,7 @@ func (c *Classifier) Seen() int {
 	return int(atomic.LoadInt32(&c.seen))
 }
 
-// Returns if we are a classifier of type TfIdf
+// IsTfIdf returns if we are a classifier of type TfIdf
 func (c *Classifier) IsTfIdf() bool {
 	return c.tfIdf
 }
@@ -324,7 +324,7 @@ func (c *Classifier) Learn(document []string, which Class) {
 	c.learned++
 }
 
-// Here we use all the TF samples for the class and convert
+// ConvertTermsFreqToTfIdf: Here we use all the TF samples for the class and convert
 // them to TF-IDF https://en.wikipedia.org/wiki/Tf%E2%80%93idf
 // once we have finished learning all the classes and have the totals.
 func (c *Classifier) ConvertTermsFreqToTfIdf() {
@@ -524,7 +524,7 @@ func (c *Classifier) WordsByClass(class Class) (freqMap map[string]float64) {
 	return freqMap
 }
 
-// Serialize this classifier to a file.
+// WriteToFile: Serialize this classifier to a file.
 func (c *Classifier) WriteToFile(name string) (err error) {
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
@@ -553,7 +553,7 @@ func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 	return
 }
 
-// Serialize this classifier to GOB and write to Writer.
+// WriteTo: Serialize this classifier to GOB and write to Writer.
 func (c *Classifier) WriteTo(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
 	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, int(c.seen), c.datas, c.tfIdf, c.DidConvertTfIdf})
