@@ -158,9 +158,9 @@ func TestSeenLearned(t *testing.T) {
 
 func TestInduceUnderflow(t *testing.T) {
 	c := NewClassifier(Good, Bad) // knows no words
-	const DOC_SIZE = 1000
-	document := make([]string, DOC_SIZE)
-	for i := 0; i < DOC_SIZE; i++ {
+	const docSize = 1000
+	document := make([]string, docSize)
+	for i := 0; i < docSize; i++ {
 		document[i] = "word"
 	}
 	// should induce overflow, because each word
