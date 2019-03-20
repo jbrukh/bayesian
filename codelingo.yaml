@@ -1,0 +1,4 @@
+tenets:
+  - import: codelingo/effective-go/update-comment-first-word-as-subject
+  - import: codelingo/effective-go/comment-first-word-when-empty
+  - import: codelingo/effective-go/underscores-in-name
