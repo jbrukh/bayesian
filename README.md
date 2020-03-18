@@ -1,4 +1,4 @@
-## Naive Bayesian Classification
+# Naive Bayesian Classification
 
 Perform naive Bayesian classification into an arbitrary number of classes on sets of strings. `bayesian` also supports term frequency-inverse document frequency calculations ([TF-IDF](https://www.wikiwand.com/en/Tf%E2%80%93idf)).
 
@@ -7,28 +7,30 @@ All rights reserved.  See the LICENSE file for BSD-style license.
 
 ------------
 
-### Background
+## Background
 
 This is meant to be an low-entry barrier Go library for basic Bayesian classification. See code comments for a refresher on naive Bayesian classifiers, and please take some time to understand underflow edge cases as this otherwise may result in innacurate classifications.
 
 ------------
 
-### Installation
+## Installation
 
 Using the go command:
+
 ```shell
-go get github.com/jbrukh/bayesian
+go get github.com/navossoc/bayesian
 go install !$
 ```
-------------
-
-### Documentation
-
-See the GoPkgDoc documentation [here](https://godoc.org/github.com/jbrukh/bayesian).
 
 ------------
 
-### Features
+## Documentation
+
+See the GoPkgDoc documentation [here](https://godoc.org/github.com/navossoc/bayesian).
+
+------------
+
+## Features
 
 - Conditional probability and "log-likelihood"-like scoring.
 - Underflow detection.
@@ -38,57 +40,60 @@ See the GoPkgDoc documentation [here](https://godoc.org/github.com/jbrukh/bayesi
 
 ------------
 
-### Example 1 (Simple Classification)
+## Example 1 (Simple Classification)
 
 To use the classifier, first you must create some classes
 and train it:
 
 ```go
-import . "bayesian"
+import "github.com/navossoc/bayesian"
 
 const (
-    Good Class = "Good"
-    Bad Class = "Bad"
+    Good bayesian.Class = "Good"
+    Bad  bayesian.Class = "Bad"
 )
 
-classifier := NewClassifier(Good, Bad)
+classifier := bayesian.NewClassifier(Good, Bad)
 goodStuff := []string{"tall", "rich", "handsome"}
 badStuff  := []string{"poor", "smelly", "ugly"}
 classifier.Learn(goodStuff, Good)
 classifier.Learn(badStuff,  Bad)
 ```
+
 Then you can ascertain the scores of each class and
 the most likely class your data belongs to:
+
 ```go
 scores, likely, _ := classifier.LogScores(
-                        []string{"tall", "girl"}
+                        []string{"tall", "girl"},
                      )
 ```
+
 Magnitude of the score indicates likelihood. Alternatively (but
 with some risk of float underflow), you can obtain actual probabilities:
 
 ```go
 probs, likely, _ := classifier.ProbScores(
-                        []string{"tall", "girl"}
+                        []string{"tall", "girl"},
                      )
 ```
 
-### Example 2 (TF-IDF Support)
+## Example 2 (TF-IDF Support)
 
 To use the TF-IDF classifier, first you must create some classes
 and train it and you need to call ConvertTermsFreqToTfIdf() AFTER training
 and before calling classification methods such as `LogScores`, `SafeProbScores`, and `ProbScores`)
 
 ```go
-import . "bayesian"
+import "github.com/navossoc/bayesian"
 
 const (
-    Good Class = "Good"
-    Bad Class = "Bad"
+    Good bayesian.Class = "Good"
+    Bad bayesian.Class = "Bad"
 )
 
 // Create a classifier with TF-IDF support.
-classifier := NewClassifierTfIdf(Good, Bad)
+classifier := bayesian.NewClassifierTfIdf(Good, Bad)
 
 goodStuff := []string{"tall", "rich", "handsome"}
 badStuff  := []string{"poor", "smelly", "ugly"}
@@ -105,15 +110,17 @@ the most likely class your data belongs to:
 
 ```go
 scores, likely, _ := classifier.LogScores(
-                        []string{"tall", "girl"}
-                     )
+    []string{"tall", "girl"},
+)
 ```
+
 Magnitude of the score indicates likelihood. Alternatively (but
 with some risk of float underflow), you can obtain actual probabilities:
 
 ```go
 probs, likely, _ := classifier.ProbScores(
-                        []string{"tall", "girl"}
-                     )
+    []string{"tall", "girl"},
+)
 ```
+
 Use wisely.

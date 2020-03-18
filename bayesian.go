@@ -165,6 +165,8 @@ func NewClassifierFromFile(name string) (c *Classifier, err error) {
 	if err != nil {
 		return nil, err
 	}
+	defer file.Close()
+
 	return NewClassifierFromReader(file)
 }
 
@@ -479,6 +481,8 @@ func (c *Classifier) WriteToFile(name string) (err error) {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
+
 	return c.WriteTo(file)
 }
 
@@ -498,6 +502,8 @@ func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 	if err != nil {
 		return err
 	}
+	defer file.Close()
+
 	enc := gob.NewEncoder(file)
 	err = enc.Encode(data)
 	return
@@ -521,6 +527,7 @@ func (c *Classifier) ReadClassFromFile(class Class, location string) (err error)
 	if err != nil {
 		return err
 	}
+	defer file.Close()
 
 	dec := gob.NewDecoder(file)
 	w := new(classData)
