@@ -1,6 +1,7 @@
 package bayesian
 
 import (
+	"encoding/gob"
 	"encoding/json"
 	"errors"
 	"io"
@@ -14,6 +15,15 @@ import (
 // defaultProb is the tiny non-zero probability that a word
 // we have not seen before appears in the class.
 const defaultProb = 0.00000000001
+
+// Serializer to persist learned model
+// gob by default
+type Serializer string
+
+const (
+	Gob  Serializer = "gob"
+	JSON Serializer = "json"
+)
 
 // ErrUnderflow is returned when an underflow is detected.
 var ErrUnderflow = errors.New("possible underflow detected")
@@ -161,7 +171,7 @@ func NewClassifier(classes ...Class) (c *Classifier) {
 // NewClassifierFromFile loads an existing classifier from
 // file. The classifier was previously saved with a call
 // to c.WriteToFile(string).
-func NewClassifierFromFile(name string) (c *Classifier, err error) {
+func NewClassifierFromFile(name string, s ...Serializer) (c *Classifier, err error) {
 	file, err := os.Open(name)
 	if err != nil {
 		return nil, err
@@ -173,16 +183,40 @@ func NewClassifierFromFile(name string) (c *Classifier, err error) {
 		}
 	}()
 
-	return NewClassifierFromReader(file)
+	return NewClassifierFromReader(file, s...)
 }
 
-// NewClassifierFromReader: This actually does the deserializing of a Gob encoded classifier
-func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
-	dec := json.NewDecoder(r)
-	w := new(serializableClassifier)
-	err = dec.Decode(w)
+// NewClassifierFromReader: This actually does the deserializing of a Gob/JSON encoded classifier
+func NewClassifierFromReader(r io.Reader, s ...Serializer) (c *Classifier, err error) {
+	var ser Serializer
+	if len(s) == 1 {
+		ser = s[0]
+	}
 
-	return &Classifier{w.Classes, int(w.Learned), int32(w.Seen), w.Datas, w.TfIdf, w.DidConvertTfIdf}, err
+	w := new(serializableClassifier)
+	if ser == JSON {
+		dec := json.NewDecoder(r)
+		err = dec.Decode(w)
+		if err != nil {
+			return
+		}
+	} else {
+		dec := gob.NewDecoder(r)
+		err = dec.Decode(w)
+		if err != nil {
+			return
+		}
+	}
+
+	c = &Classifier{
+		w.Classes,
+		int(w.Learned),
+		int32(w.Seen),
+		w.Datas,
+		w.TfIdf,
+		w.DidConvertTfIdf,
+	}
+	return
 }
 
 // getPriors returns the prior probabilities for the
@@ -298,7 +332,7 @@ func (c *Classifier) ConvertTermsFreqToTfIdf() {
 
 				// we always want a possitive TF-IDF score.
 				tf := c.datas[className].FreqTfs[wIndex][tfSampleIndex]
-				c.datas[className].FreqTfs[wIndex][tfSampleIndex] = math.Log1p(tf) * math.Log1p(float64(c.learned)/float64(c.datas[className].Total))
+				c.datas[className].FreqTfs[wIndex][tfSampleIndex] = math.Log1p(tf) * math.Log1p(float64(c.learned)/c.datas[className].Total)
 				tfIdfAdder += c.datas[className].FreqTfs[wIndex][tfSampleIndex]
 			}
 			// convert the 'counts' to TF-IDF's
@@ -474,14 +508,14 @@ func (c *Classifier) WordFrequencies(words []string) (freqMatrix [][]float64) {
 func (c *Classifier) WordsByClass(class Class) (freqMap map[string]float64) {
 	freqMap = make(map[string]float64)
 	for word, cnt := range c.datas[class].Freqs {
-		freqMap[word] = float64(cnt) / float64(c.datas[class].Total)
+		freqMap[word] = cnt / c.datas[class].Total
 	}
 
 	return freqMap
 }
 
 // WriteToFile serializes this classifier to a file.
-func (c *Classifier) WriteToFile(name string) (err error) {
+func (c *Classifier) WriteToFile(name string, s ...Serializer) (err error) {
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
@@ -493,14 +527,13 @@ func (c *Classifier) WriteToFile(name string) (err error) {
 		}
 	}()
 
-	_, err = c.WriteTo(file)
-	return err
+	return c.WriteTo(file, s...)
 }
 
 // WriteClassesToFile writes all classes to files.
-func (c *Classifier) WriteClassesToFile(rootPath string) (err error) {
+func (c *Classifier) WriteClassesToFile(rootPath string, s ...Serializer) (err error) {
 	for name := range c.datas {
-		err = c.WriteClassToFile(name, rootPath)
+		err = c.WriteClassToFile(name, rootPath, s...)
 		if err != nil {
 			return
 		}
@@ -509,7 +542,12 @@ func (c *Classifier) WriteClassesToFile(rootPath string) (err error) {
 }
 
 // WriteClassToFile writes a single class to file.
-func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
+func (c *Classifier) WriteClassToFile(name Class, rootPath string, s ...Serializer) (err error) {
+	var ser Serializer
+	if len(s) == 1 {
+		ser = s[0]
+	}
+
 	data := c.datas[name]
 	fileName := filepath.Join(rootPath, string(name))
 	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0644)
@@ -523,22 +561,47 @@ func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 		}
 	}()
 
-	enc := json.NewEncoder(file)
-	err = enc.Encode(data)
-	return
+	if ser == JSON {
+		enc := json.NewEncoder(file)
+		return enc.Encode(data)
+	}
+
+	enc := gob.NewEncoder(file)
+	return enc.Encode(data)
 }
 
 // WriteTo serializes this classifier to JSON and write to Writer.
-func (c *Classifier) WriteTo(w io.Writer) (n int64, err error) {
-	enc := json.NewEncoder(w)
-	err = enc.Encode(&serializableClassifier{c.Classes, float64(c.learned), float64(c.seen), c.datas, c.tfIdf, c.DidConvertTfIdf})
+func (c *Classifier) WriteTo(w io.Writer, s ...Serializer) (err error) {
+	var ser Serializer
+	if len(s) == 1 {
+		ser = s[0]
+	}
 
-	return
+	data := &serializableClassifier{
+		c.Classes,
+		float64(c.learned),
+		float64(c.seen),
+		c.datas,
+		c.tfIdf,
+		c.DidConvertTfIdf,
+	}
+	if ser == JSON {
+		enc := json.NewEncoder(w)
+		return enc.Encode(data)
+	}
+
+	enc := gob.NewEncoder(w)
+	return enc.Encode(data)
 }
 
 // ReadClassFromFile loads existing class data from a
 // file.
-func (c *Classifier) ReadClassFromFile(class Class, location string) (err error) {
+func (c *Classifier) ReadClassFromFile(class Class, location string, s ...Serializer) (err error) {
+	var ser Serializer
+	if len(s) == 1 {
+		ser = s[0]
+	}
+
 	fileName := filepath.Join(location, string(class))
 	file, err := os.Open(fileName)
 
@@ -552,9 +615,14 @@ func (c *Classifier) ReadClassFromFile(class Class, location string) (err error)
 		}
 	}()
 
-	dec := json.NewDecoder(file)
 	w := new(classData)
-	err = dec.Decode(w)
+	if ser == JSON {
+		dec := json.NewDecoder(file)
+		err = dec.Decode(w)
+	} else {
+		dec := gob.NewDecoder(file)
+		err = dec.Decode(w)
+	}
 
 	c.learned++
 	c.datas[class] = w
