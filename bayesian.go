@@ -45,12 +45,12 @@ type Classifier struct {
 // Classifier objects whose fields are modifiable by
 // reflection and are therefore writeable by gob.
 type serializableClassifier struct {
-	Classes         []Class              `json:"classes"`
-	Learned         float64              `json:"learned"`
-	Seen            float64              `json:"seen"`
-	Datas           map[Class]*classData `json:"datas"`
-	TfIdf           bool                 `json:"tf_idf"`
-	DidConvertTfIdf bool                 `json:"did_convert_tf_idf"`
+	Classes         []Class              `json:"c,omitempty"`
+	Learned         float64              `json:"l,omitempty"`
+	Seen            float64              `json:"s,omitempty"`
+	Datas           map[Class]*classData `json:"d,omitempty"`
+	TfIdf           bool                 `json:"t,omitempty"`
+	DidConvertTfIdf bool                 `json:"dc,omitempty"`
 }
 
 // classData holds the frequency data for words in a
@@ -58,9 +58,9 @@ type serializableClassifier struct {
 // structure with a trie-like structure for more
 // efficient storage.
 type classData struct {
-	Freqs   map[string]float64   `json:"freqs"`
-	FreqTfs map[string][]float64 `json:"freq_tfs"`
-	Total   float64              `json:"total"`
+	Freqs   map[string]float64   `json:"r,omitempty"`
+	FreqTfs map[string][]float64 `json:"ft,omitempty"`
+	Total   float64              `json:"t,omitempty"`
 }
 
 // newClassData creates a new empty classData node.
