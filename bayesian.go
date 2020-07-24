@@ -1,9 +1,10 @@
 package bayesian
 
 import (
-	"encoding/gob"
+	"encoding/json"
 	"errors"
 	"io"
+	"log"
 	"math"
 	"os"
 	"path/filepath"
@@ -44,12 +45,12 @@ type Classifier struct {
 // Classifier objects whose fields are modifiable by
 // reflection and are therefore writeable by gob.
 type serializableClassifier struct {
-	Classes         []Class
-	Learned         int
-	Seen            int
-	Datas           map[Class]*classData
-	TfIdf           bool
-	DidConvertTfIdf bool
+	Classes         []Class              `json:"classes"`
+	Learned         float64              `json:"learned"`
+	Seen            float64              `json:"seen"`
+	Datas           map[Class]*classData `json:"datas"`
+	TfIdf           bool                 `json:"tf_idf"`
+	DidConvertTfIdf bool                 `json:"did_convert_tf_idf"`
 }
 
 // classData holds the frequency data for words in a
@@ -57,9 +58,9 @@ type serializableClassifier struct {
 // structure with a trie-like structure for more
 // efficient storage.
 type classData struct {
-	Freqs   map[string]float64
-	FreqTfs map[string][]float64
-	Total   int
+	Freqs   map[string]float64   `json:"freqs"`
+	FreqTfs map[string][]float64 `json:"freq_tfs"`
+	Total   float64              `json:"total"`
 }
 
 // newClassData creates a new empty classData node.
@@ -165,18 +166,23 @@ func NewClassifierFromFile(name string) (c *Classifier, err error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
 	return NewClassifierFromReader(file)
 }
 
 // NewClassifierFromReader: This actually does the deserializing of a Gob encoded classifier
 func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
-	dec := gob.NewDecoder(r)
+	dec := json.NewDecoder(r)
 	w := new(serializableClassifier)
 	err = dec.Decode(w)
 
-	return &Classifier{w.Classes, w.Learned, int32(w.Seen), w.Datas, w.TfIdf, w.DidConvertTfIdf}, err
+	return &Classifier{w.Classes, int(w.Learned), int32(w.Seen), w.Datas, w.TfIdf, w.DidConvertTfIdf}, err
 }
 
 // getPriors returns the prior probabilities for the
@@ -190,8 +196,8 @@ func (c *Classifier) getPriors() (priors []float64) {
 	sum := 0
 	for index, class := range c.Classes {
 		total := c.datas[class].Total
-		priors[index] = float64(total)
-		sum += total
+		priors[index] = total
+		sum += int(total)
 	}
 	if sum != 0 {
 		for i := 0; i < n; i++ {
@@ -213,7 +219,6 @@ func (c *Classifier) Seen() int {
 	return int(atomic.LoadInt32(&c.seen))
 }
 
-
 // IsTfIdf returns true if we are a classifier of type TfIdf
 func (c *Classifier) IsTfIdf() bool {
 	return c.tfIdf
@@ -225,7 +230,7 @@ func (c *Classifier) WordCount() (result []int) {
 	result = make([]int, len(c.Classes))
 	for inx, class := range c.Classes {
 		data := c.datas[class]
-		result[inx] = data.Total
+		result[inx] = int(data.Total)
 	}
 	return
 }
@@ -233,9 +238,10 @@ func (c *Classifier) WordCount() (result []int) {
 // Observe should be used when word-frequencies have been already been learned
 // externally (e.g., hadoop)
 func (c *Classifier) Observe(word string, count int, which Class) {
+	cnt := float64(count)
 	data := c.datas[which]
-	data.Freqs[word] += float64(count)
-	data.Total += count
+	data.Freqs[word] += cnt
+	data.Total += cnt
 }
 
 // Learn will accept new training documents for
@@ -474,22 +480,30 @@ func (c *Classifier) WordsByClass(class Class) (freqMap map[string]float64) {
 	return freqMap
 }
 
-
 // WriteToFile serializes this classifier to a file.
 func (c *Classifier) WriteToFile(name string) (err error) {
 	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
-	return c.WriteTo(file)
+	_, err = c.WriteTo(file)
+	return err
 }
 
 // WriteClassesToFile writes all classes to files.
 func (c *Classifier) WriteClassesToFile(rootPath string) (err error) {
 	for name := range c.datas {
-		c.WriteClassToFile(name, rootPath)
+		err = c.WriteClassToFile(name, rootPath)
+		if err != nil {
+			return
+		}
 	}
 	return
 }
@@ -502,18 +516,22 @@ func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
-	enc := gob.NewEncoder(file)
+	enc := json.NewEncoder(file)
 	err = enc.Encode(data)
 	return
 }
 
-
-// WriteTo serializes this classifier to GOB and write to Writer.
-func (c *Classifier) WriteTo(w io.Writer) (err error) {
-	enc := gob.NewEncoder(w)
-	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, int(c.seen), c.datas, c.tfIdf, c.DidConvertTfIdf})
+// WriteTo serializes this classifier to JSON and write to Writer.
+func (c *Classifier) WriteTo(w io.Writer) (n int64, err error) {
+	enc := json.NewEncoder(w)
+	err = enc.Encode(&serializableClassifier{c.Classes, float64(c.learned), float64(c.seen), c.datas, c.tfIdf, c.DidConvertTfIdf})
 
 	return
 }
@@ -527,9 +545,14 @@ func (c *Classifier) ReadClassFromFile(class Class, location string) (err error)
 	if err != nil {
 		return err
 	}
-	defer file.Close()
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			log.Print(err)
+		}
+	}()
 
-	dec := gob.NewDecoder(file)
+	dec := json.NewDecoder(file)
 	w := new(classData)
 	err = dec.Decode(w)
 
