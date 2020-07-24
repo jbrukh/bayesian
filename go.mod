@@ -1,3 +1,3 @@
-module github.com/nnqq/bayesian
+module github.com/jbrukh/bayesian
 
 go 1.14
