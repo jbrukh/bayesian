@@ -18,7 +18,7 @@ This is meant to be an low-entry barrier Go library for basic Bayesian classific
 Using the go command:
 
 ```shell
-go get github.com/navossoc/bayesian
+go get github.com/jbrukh/bayesian
 go install !$
 ```
 
@@ -26,7 +26,7 @@ go install !$
 
 ## Documentation
 
-See the GoPkgDoc documentation [here](https://godoc.org/github.com/navossoc/bayesian).
+See the GoPkgDoc documentation [here](https://godoc.org/github.com/jbrukh/bayesian).
 
 ------------
 
@@ -46,7 +46,7 @@ To use the classifier, first you must create some classes
 and train it:
 
 ```go
-import "github.com/navossoc/bayesian"
+import "github.com/jbrukh/bayesian"
 
 const (
     Good bayesian.Class = "Good"
@@ -85,7 +85,7 @@ and train it and you need to call ConvertTermsFreqToTfIdf() AFTER training
 and before calling classification methods such as `LogScores`, `SafeProbScores`, and `ProbScores`)
 
 ```go
-import "github.com/navossoc/bayesian"
+import "github.com/jbrukh/bayesian"
 
 const (
     Good bayesian.Class = "Good"
