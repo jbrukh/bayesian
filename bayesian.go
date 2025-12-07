@@ -80,20 +80,6 @@ func (d *classData) getWordProb(word string) float64 {
 	return float64(value) / float64(d.Total)
 }
 
-// getWordsProb returns P(D|C_j) -- the probability of seeing
-// this set of words in a document of this class.
-//
-// Note that words should not be empty, and this method of
-// calculation is prone to underflow if there are many words
-// and their individual probabilities are small.
-func (d *classData) getWordsProb(words []string) (prob float64) {
-	prob = 1
-	for _, word := range words {
-		prob *= d.getWordProb(word)
-	}
-	return
-}
-
 // NewClassifierTfIdf returns a new classifier. The classes provided
 // should be at least 2 in number and unique, or this method will
 // panic.

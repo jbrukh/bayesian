@@ -392,3 +392,106 @@ func TestTfIdClassifier_LogScore(t *testing.T) {
 	fmt.Printf("%#v", score)
 
 }
+
+func TestWordsByClass(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+	c.Learn([]string{"tall", "handsome", "rich"}, Good)
+	c.Learn([]string{"bald", "poor", "ugly"}, Bad)
+
+	goodWords := c.WordsByClass(Good)
+	Assert(t, len(goodWords) == 3, "should have 3 words")
+	Assert(t, goodWords["tall"] == float64(1)/float64(3), "tall frequency")
+	Assert(t, goodWords["handsome"] == float64(1)/float64(3), "handsome frequency")
+	Assert(t, goodWords["rich"] == float64(1)/float64(3), "rich frequency")
+
+	badWords := c.WordsByClass(Bad)
+	Assert(t, len(badWords) == 3, "should have 3 words")
+	Assert(t, badWords["bald"] == float64(1)/float64(3), "bald frequency")
+}
+
+func TestNewClassifierTfIdfNotUnique(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			// we are good
+		}
+	}()
+	c := NewClassifierTfIdf(Good, Good, Bad)
+	Assert(t, false, "should have panicked:", c)
+}
+
+func TestNewClassifierTfIdfTooFew(t *testing.T) {
+	defer func() {
+		if err := recover(); err != nil {
+			// we are good
+		}
+	}()
+	c := NewClassifierTfIdf(Good)
+	Assert(t, false, "should have panicked:", c)
+}
+
+func TestTfIdfProbScoresPanic(t *testing.T) {
+	c := NewClassifierTfIdf(Good, Bad)
+	c.Learn([]string{"tall", "handsome"}, Good)
+
+	defer func() {
+		if err := recover(); err != nil {
+			// we are good - should panic without ConvertTermsFreqToTfIdf
+		}
+	}()
+	c.ProbScores([]string{"tall"})
+	Assert(t, false, "should have panicked")
+}
+
+func TestTfIdfSafeProbScoresPanic(t *testing.T) {
+	c := NewClassifierTfIdf(Good, Bad)
+	c.Learn([]string{"tall", "handsome"}, Good)
+
+	defer func() {
+		if err := recover(); err != nil {
+			// we are good - should panic without ConvertTermsFreqToTfIdf
+		}
+	}()
+	c.SafeProbScores([]string{"tall"})
+	Assert(t, false, "should have panicked")
+}
+
+func TestTfIdfLearnAfterConvertPanic(t *testing.T) {
+	c := NewClassifierTfIdf(Good, Bad)
+	c.Learn([]string{"tall", "handsome"}, Good)
+	c.ConvertTermsFreqToTfIdf()
+
+	defer func() {
+		if err := recover(); err != nil {
+			// we are good - should panic when learning after conversion
+		}
+	}()
+	c.Learn([]string{"more", "words"}, Good)
+	Assert(t, false, "should have panicked")
+}
+
+func TestNewClassifierFromFileError(t *testing.T) {
+	_, err := NewClassifierFromFile("nonexistent_file.ser")
+	Assert(t, err != nil, "should return error for nonexistent file")
+}
+
+func TestWriteToFileError(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+	c.Learn([]string{"test"}, Good)
+	// Try to write to an invalid path
+	err := c.WriteToFile("/nonexistent_directory/test.ser")
+	Assert(t, err != nil, "should return error for invalid path")
+}
+
+func TestWriteClassToFileError(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+	c.Learn([]string{"test"}, Good)
+	// Try to write to an invalid path
+	err := c.WriteClassToFile(Good, "/nonexistent_directory")
+	Assert(t, err != nil, "should return error for invalid path")
+}
+
+func TestReadClassFromFileError(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+	err := c.ReadClassFromFile(Good, "/nonexistent_directory")
+	Assert(t, err != nil, "should return error for nonexistent file")
+}
