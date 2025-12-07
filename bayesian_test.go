@@ -18,8 +18,10 @@ func Assert(t *testing.T, condition bool, args ...interface{}) {
 func TestEmpty(t *testing.T) {
 	c := NewClassifier("Good", "Bad", "Neutral")
 	priors := c.getPriors()
+	// With Laplace smoothing, empty classifier should have uniform priors
+	expected := 1.0 / float64(len(priors))
 	for _, item := range priors {
-		Assert(t, item == 0)
+		Assert(t, item == expected, "expected uniform prior", expected, "got", item)
 	}
 }
 
@@ -200,10 +202,18 @@ func TestInduceUnderflow(t *testing.T) {
 	for i := 0; i < docSize; i++ {
 		document[i] = "word"
 	}
-	// should induce overflow, because each word
+	// should induce underflow, because each word
 	// will have "defaultProb", which is small
-	scores, _, _, err := c.SafeProbScores(document)
+	scores, inx, _, err := c.SafeProbScores(document)
 	Assert(t, err == ErrUnderflow, "Underflow error not detected")
+	// Verify log-sum-exp recovery produces valid probabilities
+	sum := 0.0
+	for _, s := range scores {
+		Assert(t, s >= 0 && s <= 1, "score out of range [0,1]:", s)
+		sum += s
+	}
+	Assert(t, sum > 0.999 && sum < 1.001, "scores don't sum to 1:", sum)
+	Assert(t, inx >= 0 && inx < len(scores), "index out of range:", inx)
 	println(scores)
 }
 

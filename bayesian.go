@@ -150,22 +150,22 @@ func NewClassifierFromReader(r io.Reader) (c *Classifier, err error) {
 
 // getPriors returns the prior probabilities for the
 // classes provided -- P(C_j).
-//
-// TODO: There is a way to smooth priors, currently
-// not implemented here.
+// Uses Laplace smoothing to ensure no prior is zero:
+// P(C_j) = (count_j + 1) / (total + num_classes)
 func (c *Classifier) getPriors() (priors []float64) {
 	n := len(c.Classes)
-	priors = make([]float64, n, n)
+	priors = make([]float64, n)
 	sum := 0
 	for index, class := range c.Classes {
 		total := c.datas[class].Total
 		priors[index] = float64(total)
 		sum += total
 	}
-	if sum != 0 {
-		for i := 0; i < n; i++ {
-			priors[i] /= float64(sum)
-		}
+	// Apply Laplace smoothing to priors to avoid log(0)
+	floatN := float64(n)
+	floatSum := float64(sum)
+	for i := 0; i < n; i++ {
+		priors[i] = (priors[i] + 1) / (floatSum + floatN)
 	}
 	return
 }
@@ -339,19 +339,20 @@ func (c *Classifier) Classify(document []string) (class Class, scores []float64,
 // never seen before. Depending on the application, this
 // may or may not be a concern. Consider using SafeProbScores()
 // instead.
+//
+// If all scores underflow to zero, returns equal probabilities
+// for all classes (1/n each).
 func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict bool) {
 	if c.tfIdf && !c.DidConvertTfIdf {
 		panic("Using a TF-IDF classifier. Please call ConvertTermsFreqToTfIdf before calling ProbScores.")
 	}
 	n := len(c.Classes)
-	scores = make([]float64, n, n)
+	scores = make([]float64, n)
 	priors := c.getPriors()
 	sum := float64(0)
 	// calculate the score for each class
 	for index, class := range c.Classes {
 		data := c.datas[class]
-		// c is the sum of the logarithms
-		// as outlined in the refresher
 		score := priors[index]
 		for _, word := range doc {
 			score *= data.getWordProb(word)
@@ -359,10 +360,20 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 		scores[index] = score
 		sum += score
 	}
-	for i := 0; i < n; i++ {
-		scores[i] /= sum
+	// Handle underflow: if sum is 0, all scores underflowed
+	// Return equal probabilities to avoid NaN
+	if sum == 0 {
+		equal := 1.0 / float64(n)
+		for i := 0; i < n; i++ {
+			scores[i] = equal
+		}
+		strict = false
+	} else {
+		for i := 0; i < n; i++ {
+			scores[i] /= sum
+		}
+		inx, strict = findMax(scores)
 	}
-	inx, strict = findMax(scores)
 	atomic.AddInt32(&c.seen, 1)
 	return scores, inx, strict
 }
@@ -383,26 +394,28 @@ func (c *Classifier) ClassifyProb(document []string) (class Class, scores []floa
 // this method returns an ErrUnderflow, allowing the user to deal with it as
 // necessary. Note that underflow, under certain rare circumstances,
 // may still result in incorrect probabilities being returned,
-// but this method guarantees that all error-less invokations
+// but this method guarantees that all error-less invocations
 // are properly classified.
 //
 // Underflow detection is more costly because it also
 // has to make additional log score calculations.
+//
+// When underflow is detected, the returned scores are computed from
+// log-domain scores using the log-sum-exp trick for numerical stability.
 func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, strict bool, err error) {
 	if c.tfIdf && !c.DidConvertTfIdf {
 		panic("Using a TF-IDF classifier. Please call ConvertTermsFreqToTfIdf before calling SafeProbScores.")
 	}
 
 	n := len(c.Classes)
-	scores = make([]float64, n, n)
-	logScores := make([]float64, n, n)
+	scores = make([]float64, n)
+	logScores := make([]float64, n)
 	priors := c.getPriors()
 	sum := float64(0)
+
 	// calculate the score for each class
 	for index, class := range c.Classes {
 		data := c.datas[class]
-		// c is the sum of the logarithms
-		// as outlined in the refresher
 		score := priors[index]
 		logScore := math.Log(priors[index])
 		for _, word := range doc {
@@ -414,20 +427,62 @@ func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, st
 		logScores[index] = logScore
 		sum += score
 	}
-	for i := 0; i < n; i++ {
-		scores[i] /= sum
-	}
-	inx, strict = findMax(scores)
+
+	// Get the winner from log-domain (always reliable)
 	logInx, logStrict := findMax(logScores)
 
-	// detect underflow -- the size
-	// relation between scores and logScores
-	// must be preserved or something is wrong
-	if inx != logInx || strict != logStrict {
+	// Check for underflow: if sum is 0 or prob-domain disagrees with log-domain
+	if sum == 0 {
+		// Complete underflow - use log-sum-exp to recover probabilities
 		err = ErrUnderflow
+		scores = logScoresToProbs(logScores)
+		inx, strict = logInx, logStrict
+	} else {
+		for i := 0; i < n; i++ {
+			scores[i] /= sum
+		}
+		inx, strict = findMax(scores)
+
+		// Detect partial underflow - when prob and log domains disagree
+		if inx != logInx || strict != logStrict {
+			err = ErrUnderflow
+			// Use log-domain results as they're more reliable
+			scores = logScoresToProbs(logScores)
+			inx, strict = logInx, logStrict
+		}
 	}
+
 	atomic.AddInt32(&c.seen, 1)
 	return scores, inx, strict, err
+}
+
+// logScoresToProbs converts log-domain scores to probabilities
+// using the log-sum-exp trick for numerical stability.
+func logScoresToProbs(logScores []float64) []float64 {
+	n := len(logScores)
+	probs := make([]float64, n)
+
+	// Find max for numerical stability
+	maxLog := logScores[0]
+	for i := 1; i < n; i++ {
+		if logScores[i] > maxLog {
+			maxLog = logScores[i]
+		}
+	}
+
+	// Compute exp(log - max) and sum
+	sum := 0.0
+	for i := 0; i < n; i++ {
+		probs[i] = math.Exp(logScores[i] - maxLog)
+		sum += probs[i]
+	}
+
+	// Normalize
+	for i := 0; i < n; i++ {
+		probs[i] /= sum
+	}
+
+	return probs
 }
 
 // ClassifySafe returns the most likely class for the given document
