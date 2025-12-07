@@ -11,8 +11,10 @@ import (
 )
 
 // defaultProb is the tiny non-zero probability that a word
-// we have not seen before appears in the class.
-const defaultProb = 0.00000000001
+// we have not seen before appears in the class. This is used
+// as a fallback when Laplace smoothing cannot be applied
+// (e.g., when the classifier has no training data).
+const defaultProb = 1e-11
 
 // ErrUnderflow is returned when an underflow is detected.
 var ErrUnderflow = errors.New("possible underflow detected")
@@ -72,75 +74,56 @@ func newClassData() *classData {
 
 // getWordProb returns P(W|C_j) -- the probability of seeing
 // a particular word W in a document of this class.
+// Uses Laplace smoothing (add-one smoothing) to handle unseen words:
+// P(W|C) = (count(W,C) + 1) / (total_words_in_C + vocabulary_size)
 func (d *classData) getWordProb(word string) float64 {
-	value, ok := d.Freqs[word]
-	if !ok {
+	vocab := len(d.Freqs)
+	if d.Total == 0 || vocab == 0 {
 		return defaultProb
 	}
-	return float64(value) / float64(d.Total)
+	value := d.Freqs[word] // 0 if not found
+	return (value + 1) / (float64(d.Total) + float64(vocab))
 }
 
-// NewClassifierTfIdf returns a new classifier. The classes provided
-// should be at least 2 in number and unique, or this method will
-// panic.
-func NewClassifierTfIdf(classes ...Class) (c *Classifier) {
+// newClassifier is the internal constructor that creates a classifier.
+// The classes provided should be at least 2 in number and unique,
+// or this function will panic.
+func newClassifier(tfIdf bool, classes []Class) *Classifier {
 	n := len(classes)
-
-	// check size
 	if n < 2 {
 		panic("provide at least two classes")
 	}
 
 	// check uniqueness
-	check := make(map[Class]bool, n)
+	check := make(map[Class]struct{}, n)
 	for _, class := range classes {
-		check[class] = true
+		check[class] = struct{}{}
 	}
 	if len(check) != n {
 		panic("classes must be unique")
 	}
-	// create the classifier
-	c = &Classifier{
+
+	c := &Classifier{
 		Classes: classes,
 		datas:   make(map[Class]*classData, n),
-		tfIdf:   true,
+		tfIdf:   tfIdf,
 	}
 	for _, class := range classes {
 		c.datas[class] = newClassData()
 	}
-	return
+	return c
+}
+
+// NewClassifierTfIdf returns a new TF-IDF classifier. The classes provided
+// should be at least 2 in number and unique, or this method will panic.
+func NewClassifierTfIdf(classes ...Class) *Classifier {
+	return newClassifier(true, classes)
 }
 
 // NewClassifier returns a new classifier. The classes provided
-// should be at least 2 in number and unique, or this method will
-// panic.
-func NewClassifier(classes ...Class) (c *Classifier) {
-	n := len(classes)
-
-	// check size
-	if n < 2 {
-		panic("provide at least two classes")
-	}
-
-	// check uniqueness
-	check := make(map[Class]bool, n)
-	for _, class := range classes {
-		check[class] = true
-	}
-	if len(check) != n {
-		panic("classes must be unique")
-	}
-	// create the classifier
-	c = &Classifier{
-		Classes:         classes,
-		datas:           make(map[Class]*classData, n),
-		tfIdf:           false,
-		DidConvertTfIdf: false,
-	}
-	for _, class := range classes {
-		c.datas[class] = newClassData()
-	}
-	return
+// should be at least 2 in number and unique, or this method will panic.
+func NewClassifier(classes ...Class) *Classifier {
+	return newClassifier(false, classes)
 }
 
 // NewClassifierFromFile loads an existing classifier from
@@ -493,37 +476,35 @@ func (c *Classifier) WordsByClass(class Class) (freqMap map[string]float64) {
 
 
 // WriteToFile serializes this classifier to a file.
-func (c *Classifier) WriteToFile(name string) (err error) {
-	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE, 0644)
+func (c *Classifier) WriteToFile(name string) error {
+	file, err := os.OpenFile(name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-
 	return c.WriteGob(file)
 }
 
 // WriteClassesToFile writes all classes to files.
-func (c *Classifier) WriteClassesToFile(rootPath string) (err error) {
+func (c *Classifier) WriteClassesToFile(rootPath string) error {
 	for name := range c.datas {
-		c.WriteClassToFile(name, rootPath)
+		if err := c.WriteClassToFile(name, rootPath); err != nil {
+			return err
+		}
 	}
-	return
+	return nil
 }
 
 // WriteClassToFile writes a single class to file.
-func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
+func (c *Classifier) WriteClassToFile(name Class, rootPath string) error {
 	data := c.datas[name]
 	fileName := filepath.Join(rootPath, string(name))
-	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE, 0644)
+	file, err := os.OpenFile(fileName, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0644)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-
-	enc := gob.NewEncoder(file)
-	err = enc.Encode(data)
-	return
+	return gob.NewEncoder(file).Encode(data)
 }
 
 
