@@ -84,8 +84,8 @@ func (d *classData) getWordProb(word string) float64 {
 // this set of words in a document of this class.
 //
 // Note that words should not be empty, and this method of
-// calulation is prone to underflow if there are many words
-// and their individual probabilties are small.
+// calculation is prone to underflow if there are many words
+// and their individual probabilities are small.
 func (d *classData) getWordsProb(words []string) (prob float64) {
 	prob = 1
 	for _, word := range words {
@@ -290,7 +290,7 @@ func (c *Classifier) ConvertTermsFreqToTfIdf() {
 
 			for tfSampleIndex := range c.datas[className].FreqTfs[wIndex] {
 
-				// we always want a possitive TF-IDF score.
+				// we always want a positive TF-IDF score.
 				tf := c.datas[className].FreqTfs[wIndex][tfSampleIndex]
 				c.datas[className].FreqTfs[wIndex][tfSampleIndex] = math.Log1p(tf) * math.Log1p(float64(c.learned)/float64(c.datas[className].Total))
 				tfIdfAdder += c.datas[className].FreqTfs[wIndex][tfSampleIndex]
@@ -483,7 +483,7 @@ func (c *Classifier) WriteToFile(name string) (err error) {
 	}
 	defer file.Close()
 
-	return c.WriteTo(file)
+	return c.WriteGob(file)
 }
 
 // WriteClassesToFile writes all classes to files.
@@ -510,13 +510,14 @@ func (c *Classifier) WriteClassToFile(name Class, rootPath string) (err error) {
 }
 
 
-// WriteTo serializes this classifier to GOB and write to Writer.
-func (c *Classifier) WriteTo(w io.Writer) (err error) {
+// WriteGob serializes this classifier to GOB and writes to Writer.
+func (c *Classifier) WriteGob(w io.Writer) (err error) {
 	enc := gob.NewEncoder(w)
 	err = enc.Encode(&serializableClassifier{c.Classes, c.learned, int(c.seen), c.datas, c.tfIdf, c.DidConvertTfIdf})
 
 	return
 }
+
 
 // ReadClassFromFile loads existing class data from a
 // file.

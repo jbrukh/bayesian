@@ -11,7 +11,7 @@ const (
 
 func Assert(t *testing.T, condition bool, args ...interface{}) {
 	if !condition {
-		t.Fatal(args)
+		t.Fatal(args...)
 	}
 }
 

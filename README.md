@@ -1,8 +1,12 @@
 # Naive Bayesian Classification
 
+[![Go Reference](https://pkg.go.dev/badge/github.com/jbrukh/bayesian.svg)](https://pkg.go.dev/github.com/jbrukh/bayesian)
+[![Go Version](https://img.shields.io/github/go-mod/go-version/jbrukh/bayesian)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
+
 Perform naive Bayesian classification into an arbitrary number of classes on sets of strings. `bayesian` also supports term frequency-inverse document frequency calculations ([TF-IDF](https://www.wikiwand.com/en/Tf%E2%80%93idf)).
 
-Copyright (c) 2011-2017. Jake Brukhman. (jbrukh@gmail.com).
+Copyright (c) 2011-2024. Jake Brukhman. (jbrukh@gmail.com).
 All rights reserved.  See the LICENSE file for BSD-style license.
 
 ------------
@@ -26,7 +30,7 @@ go install !$
 
 ## Documentation
 
-See the GoPkgDoc documentation [here](https://godoc.org/github.com/jbrukh/bayesian).
+See the documentation on [pkg.go.dev](https://pkg.go.dev/github.com/jbrukh/bayesian).
 
 ------------
 
