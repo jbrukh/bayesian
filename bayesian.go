@@ -350,6 +350,16 @@ func (c *Classifier) LogScores(document []string) (scores []float64, inx int, st
 	return scores, inx, strict
 }
 
+// Classify returns the most likely class for the given document
+// along with the log scores and whether the classification is strict.
+// This is a convenience wrapper around LogScores that returns the
+// Class directly instead of an index.
+func (c *Classifier) Classify(document []string) (class Class, scores []float64, strict bool) {
+	scores, inx, strict := c.LogScores(document)
+	class = c.Classes[inx]
+	return
+}
+
 // ProbScores works the same as LogScores, but delivers
 // actual probabilities as discussed above. Note that float64
 // underflow is possible if the word list contains too
@@ -386,6 +396,16 @@ func (c *Classifier) ProbScores(doc []string) (scores []float64, inx int, strict
 	inx, strict = findMax(scores)
 	atomic.AddInt32(&c.seen, 1)
 	return scores, inx, strict
+}
+
+// ClassifyProb returns the most likely class for the given document
+// along with the probability scores and whether the classification is strict.
+// This is a convenience wrapper around ProbScores that returns the
+// Class directly instead of an index.
+func (c *Classifier) ClassifyProb(document []string) (class Class, scores []float64, strict bool) {
+	scores, inx, strict := c.ProbScores(document)
+	class = c.Classes[inx]
+	return
 }
 
 // SafeProbScores works the same as ProbScores, but is
@@ -439,6 +459,17 @@ func (c *Classifier) SafeProbScores(doc []string) (scores []float64, inx int, st
 	}
 	atomic.AddInt32(&c.seen, 1)
 	return scores, inx, strict, err
+}
+
+// ClassifySafe returns the most likely class for the given document
+// along with the probability scores, whether the classification is strict,
+// and an error if underflow is detected.
+// This is a convenience wrapper around SafeProbScores that returns the
+// Class directly instead of an index.
+func (c *Classifier) ClassifySafe(document []string) (class Class, scores []float64, strict bool, err error) {
+	scores, inx, strict, err := c.SafeProbScores(document)
+	class = c.Classes[inx]
+	return
 }
 
 // WordFrequencies returns a matrix of word frequencies that currently

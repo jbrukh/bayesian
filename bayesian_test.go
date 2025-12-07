@@ -129,6 +129,43 @@ func TestProbScores(t *testing.T) {
 	Assert(t, strict == false, "not strict")
 }
 
+func TestClassify(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+	c.Learn([]string{"tall", "handsome", "rich"}, Good)
+	c.Learn([]string{"bald", "poor", "ugly"}, Bad)
+
+	// Test Classify (log scores)
+	class, scores, strict := c.Classify([]string{"tall", "handsome"})
+	Assert(t, class == Good, "expected Good class")
+	Assert(t, scores[0] > scores[1], "good score should be higher")
+	Assert(t, strict == true, "should be strict")
+
+	class, scores, strict = c.Classify([]string{"poor", "ugly"})
+	Assert(t, class == Bad, "expected Bad class")
+	Assert(t, scores[1] > scores[0], "bad score should be higher")
+	Assert(t, strict == true, "should be strict")
+
+	// Test ClassifyProb (probability scores)
+	class, scores, strict = c.ClassifyProb([]string{"tall", "rich"})
+	Assert(t, class == Good, "expected Good class from ClassifyProb")
+	Assert(t, scores[0] > scores[1], "good prob should be higher")
+
+	class, scores, strict = c.ClassifyProb([]string{"bald", "poor"})
+	Assert(t, class == Bad, "expected Bad class from ClassifyProb")
+	Assert(t, scores[1] > scores[0], "bad prob should be higher")
+
+	// Test ClassifySafe
+	class, scores, strict, err := c.ClassifySafe([]string{"tall", "handsome"})
+	Assert(t, err == nil, "no error expected")
+	Assert(t, class == Good, "expected Good class from ClassifySafe")
+
+	class, scores, strict, err = c.ClassifySafe([]string{"poor", "ugly"})
+	Assert(t, err == nil, "no error expected")
+	Assert(t, class == Bad, "expected Bad class from ClassifySafe")
+	_ = scores
+	_ = strict
+}
+
 func TestSeenLearned(t *testing.T) {
 	c := NewClassifier(Good, Bad)
 	c.Learn([]string{"tall", "handsome", "rich"}, Good)
