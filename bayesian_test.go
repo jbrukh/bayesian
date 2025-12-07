@@ -55,6 +55,95 @@ func TestOneClass(t *testing.T) {
 	Assert(t, false, "should have panicked:", c)
 }
 
+func TestAddClass(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+
+	// Add a new class
+	err := c.AddClass("Neutral")
+	Assert(t, err == nil, "failed to add class:", err)
+	Assert(t, len(c.Classes) == 3, "expected 3 classes")
+
+	// Learn with the new class
+	c.Learn([]string{"meh", "okay", "fine"}, "Neutral")
+
+	// Classify should now work with 3 classes
+	scores, _, _ := c.LogScores([]string{"meh"})
+	Assert(t, len(scores) == 3, "expected 3 scores")
+}
+
+func TestAddClassDuplicate(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+
+	// Try to add an existing class
+	err := c.AddClass(Good)
+	Assert(t, err == ErrClassExists, "expected ErrClassExists, got:", err)
+	Assert(t, len(c.Classes) == 2, "class count should not change")
+}
+
+func TestAddClassAfterTfIdf(t *testing.T) {
+	c := NewClassifierTfIdf(Good, Bad)
+	c.Learn([]string{"hello", "world"}, Good)
+	c.Learn([]string{"goodbye", "world"}, Bad)
+	c.ConvertTermsFreqToTfIdf()
+
+	// Try to add class after TF-IDF conversion
+	err := c.AddClass("Neutral")
+	Assert(t, err == ErrAlreadyConverted, "expected ErrAlreadyConverted, got:", err)
+}
+
+func TestAddClassConcurrent(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+	const numGoroutines = 100
+
+	// Concurrently add classes (most will fail as duplicates)
+	done := make(chan bool, numGoroutines)
+	for i := 0; i < numGoroutines; i++ {
+		go func(n int) {
+			className := Class(fmt.Sprintf("Class%d", n))
+			c.AddClass(className)
+			done <- true
+		}(i)
+	}
+
+	// Wait for all goroutines
+	for i := 0; i < numGoroutines; i++ {
+		<-done
+	}
+
+	// All classes should have been added successfully
+	Assert(t, len(c.Classes) == numGoroutines+2, "expected", numGoroutines+2, "classes, got", len(c.Classes))
+}
+
+func TestConcurrentLearnAndClassify(t *testing.T) {
+	c := NewClassifier(Good, Bad)
+	c.Learn([]string{"good", "word"}, Good)
+	c.Learn([]string{"bad", "word"}, Bad)
+
+	const numGoroutines = 50
+	done := make(chan bool, numGoroutines*2)
+
+	// Concurrently learn and classify
+	for i := 0; i < numGoroutines; i++ {
+		// Learner goroutine
+		go func(n int) {
+			word := fmt.Sprintf("word%d", n)
+			c.Learn([]string{word}, Good)
+			done <- true
+		}(i)
+
+		// Classifier goroutine
+		go func() {
+			_, _, _ = c.LogScores([]string{"good", "word"})
+			done <- true
+		}()
+	}
+
+	// Wait for all goroutines
+	for i := 0; i < numGoroutines*2; i++ {
+		<-done
+	}
+}
+
 func TestObserve(t *testing.T) {
 	c := NewClassifier(Good, Bad)
 	c.Observe("tall", 2, Good)
